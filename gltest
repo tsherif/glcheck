@@ -99,9 +99,11 @@ const server = http.createServer(async (req, res) => {
     rimraf(OUTPUT_DIR);
     rimraf(COVERAGE_DIR);
     await fs.mkdir(OUTPUT_DIR);
+
     await Promise.all([
         fs.writeFile(path.resolve(OUTPUT_DIR, "index.html"), index),
-        fs.copyFile(path.resolve(__dirname, "page/gltest.js"), path.resolve(OUTPUT_DIR, "gltest.js"))
+        fs.copyFile(path.resolve(__dirname, "page/gltest.js"), path.resolve(OUTPUT_DIR, "gltest.js")),
+        fs.copyFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), path.resolve(OUTPUT_DIR, "qunit-2.9.2.js"))
     ]);
 
     if (config.assetDir) {
