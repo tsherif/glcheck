@@ -1,4 +1,4 @@
-glTest("Basic functions", (t, canvas) => {
+glTest("Basic assertions", (t, canvas) => {
     t.ok(true, "ok");
     t.notOk(false, "notOk");
 
@@ -56,6 +56,66 @@ glTest("GL buffers", (t, canvas) => {
 
     t.bufferEqual(gl, gl.ARRAY_BUFFER, new Uint8Array([5, 6, 7, 8]), "bufferEqual Uint8Array");
     t.bufferNotEqual(gl, gl.ARRAY_BUFFER, new Uint8Array([5, 6, 8, 8]), "bufferNotEqual Uint8Array");
+
+    t.done();
+});
+
+glTest("GL draw", (t, canvas) => {
+    let gl = canvas.getContext("webgl2");
+
+    gl.clearColor(1, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    t.pixelEqual(gl, [255, 0, 0, 255], "pixelEqual");
+    t.pixelNotEqual(gl, [255, 255, 0, 255], "pixelNotEqual");
+
+    let halfWidth = gl.drawingBufferWidth / 2;
+    let halfHeight = gl.drawingBufferHeight / 2;
+
+    gl.enable(gl.SCISSOR_TEST);
+
+    // Bottom left
+    gl.scissor(0, 0, halfWidth, halfHeight);
+    gl.clearColor(1, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Bottom right
+    gl.scissor(halfWidth, 0, halfWidth, halfHeight);
+    gl.clearColor(0, 1, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Top left
+    gl.scissor(0, halfHeight, halfWidth, halfHeight);
+    gl.clearColor(0, 0, 1, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    // Top right
+    gl.scissor(halfWidth, halfHeight, halfWidth, halfHeight);
+    gl.clearColor(1, 1, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    t.pixelEqual(gl, [0.25, 0.25], [255, 0, 0, 255], "pixelEqual uv");
+    t.pixelNotEqual(gl, [0.25, 0.25], [255, 0, 0, 128], "pixelNotEqual uv");
+    
+    t.pixelEqual(gl, [0.75, 0.25], [0, 255, 0, 255], "pixelEqual uv");
+    t.pixelNotEqual(gl, [0.75, 0.25], [0, 255, 0, 128], "pixelNotEqual uv");
+    
+    t.pixelEqual(gl, [0.25, 0.75], [0, 0, 255, 255], "pixelEqual uv");
+    t.pixelNotEqual(gl, [0.25, 0.75], [0, 0, 255, 128], "pixelNotEqual uv");
+    
+    t.pixelEqual(gl, [0.75, 0.75], [255, 255, 0, 255], "pixelEqual uv");
+    t.pixelNotEqual(gl, [0.75, 0.75], [255, 255, 0, 128], "pixelNotEqual uv");
+
+    t.done();
+});
+
+glTest("Async", async (t, canvas) => {
+    let done = false;
+    setTimeout(() => {
+        t.ok(true, "Async test");
+        done = true;
+    }, 100);
+    
+    await t.loopUntil(() => done);
 
     t.done();
 });
