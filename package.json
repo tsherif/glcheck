@@ -1,8 +1,10 @@
 {
   "name": "pico-gltest",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A test framework for WebGL 1 and 2 applications",
-  "bin": "pico-gltest",
+  "bin": {
+    "gltest": "gltest"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/tsherif/pico-gltest"
