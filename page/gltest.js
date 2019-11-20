@@ -113,8 +113,11 @@
             bufferNotEqual(gl, binding, expected, message) {
                 return this.arrayNotEqual(readBuffer(gl, binding, expected), expected, message);
             },
-            throws(...args) {
-                return assert.throws(...args);
+            throws(fn, message) {
+                return this.ok(checkThrow(fn), message);
+            },
+            doesNotThrow(fn, message) {
+                return this.notOk(checkThrow(fn), message);
             },
             loopUntil(cond, fn) {
                 return new Promise((resolve) => {
@@ -154,6 +157,15 @@
 
         return actual;
     };
+
+    function checkThrow(fn) {
+        try {
+            fn();
+            return false;
+        } catch(e) {
+            return true;
+        }
+    }
 
     window.glTest = glTest;
 
