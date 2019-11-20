@@ -1,0 +1,32 @@
+{
+  "name": "pico-gltest",
+  "version": "0.0.1",
+  "description": "A test framework for WebGL 1 and 2 applications",
+  "bin": "pico-gltest",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tsherif/pico-gltest"
+  },
+  "scripts": {
+    "test": "./gltest"
+  },
+  "keywords": [
+    "webgl",
+    "webgl2",
+    "test",
+    "puppeteer"
+  ],
+  "author": {
+    "name": "Tarek Sherif",
+    "email": "tareksherif@pm.me",
+    "url": "http://tareksherif.net/"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "copy-dir": "^1.2.0",
+    "node-glob": "^1.2.0",
+    "puppeteer": "^2.0.0",
+    "puppeteer-to-istanbul": "^1.2.2",
+    "rimraf": "^3.0.0"
+  }
+}
