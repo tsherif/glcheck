@@ -1,4 +1,0 @@
-{
-    "tests": ["test/*.js"],
-    "coverage": true
-}

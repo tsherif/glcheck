@@ -1,6 +1,6 @@
 {
   "name": "pico-gltest",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "A test framework for WebGL 1 and 2 applications",
   "bin": {
     "gltest": "gltest"
@@ -12,8 +12,7 @@
   "scripts": {
     "lint": "eslint gltest page/gltest.js",
     "test": "npm run lint && ./gltest",
-    "self-test": "./gltest --self-test",
-    "coverage": "rimraf coverage/ && npm run self-test && nyc report --reporter=lcov"
+    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage=true && nyc report --reporter=lcov"
   },
   "keywords": [
     "webgl",
@@ -28,6 +27,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "argparse": "^1.0.10",
     "copy-dir": "^1.2.0",
     "node-glob": "^1.2.0",
     "puppeteer": "^2.0.0",

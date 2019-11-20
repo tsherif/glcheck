@@ -24,6 +24,7 @@
 
 "use strict";
 
+
 const puppeteer = require("puppeteer");
 const pti = require("puppeteer-to-istanbul");
 const http = require("http");
@@ -32,6 +33,9 @@ const path = require("path");
 const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
+const ArgumentParser = require("argparse").ArgumentParser;
+
+const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 
 let config = {
     outputDir: "gltest-results/",
@@ -40,12 +44,42 @@ let config = {
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
-    headless: true,
-    selfTest: false
+    headless: true
 };
 
+const parser = new ArgumentParser({
+    version: GLTEST_PKG.version,
+    description: "Test WebGL 1 and 2 applications."
+});
+
+
+parser.addArgument("--config", {
+    help: "Path to config file (default './gltest.config.json')",
+    metavar: "PATH",
+    defaultValue: "gltest.config.json"
+});
+
+parser.addArgument("--coverage", {
+    help: "Generate coverage results that can be consumed by Istanbul (default false)",
+    metavar: "BOOL"
+});
+
+parser.addArgument("--headless", {
+    help: "Run headless (default true)",
+    metavar: "BOOL"
+});
+
+parser.addArgument("--self-test", {
+    help: "Set up for self testing",
+    nargs: 0
+});
+
+
+const args = parser.parseArgs();
+const configPath = path.resolve(".", args.config);
+
 try {
-    Object.assign(config, require(path.resolve(".", ".gltestrc.json")));
+    Object.assign(config, require(configPath));
     config.tests = config.tests || [];
     config.coverageExcludeFiles = config.coverageExcludeFiles || [];
     if (!Array.isArray(config.tests)) {
@@ -54,10 +88,20 @@ try {
     if (!Array.isArray(config.coverageExcludeFiles)) {
         config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
     }
-} catch (e) {}
- 
-const SELF_TEST = process.argv[2] === "--self-test";
+} catch (e) {
+    console.log(`\u001b[31mError:\u001b[0m Config file '${configPath}' not found.`);
+    process.exit(1);
+}
 
+if (args.coverage !== null) {
+    config.coverage = args.coverage.toLowerCase() === "true";
+}
+
+if (args.headless !== null) {
+    config.headless = args.headless.toLowerCase() === "true";
+}
+
+const SELF_TEST = Boolean(args.self_test);
 const OUTPUT_DIR = path.resolve(".", config.outputDir);
 const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
