@@ -21,10 +21,8 @@
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ///////////////////////////////////////////////////////////////////////////////////
 
-(function() {
-    const QUnit = window.QUnit;
-    delete window.QUnit;
-
+(function(QUnit) {
+    
     function glTest(name, fn) {
         QUnit.test(name, (assert) => runTest(assert, fn));
     }
@@ -40,7 +38,7 @@
         return new Promise((resolve, reject) => {
             requestAnimationFrame(() => {
                 try {
-                    fn(tester(assert, resolve), canvas)
+                    fn(tester(assert, resolve), canvas);
                 } catch (e) {
                     reject(e.message);
                 }
@@ -95,7 +93,7 @@
                 if (!expected || typeof expected === "string") {
                     message = expected;
                     expected = uv;
-                    uv = [0.5, 0.5];
+                    uv = [ 0.5, 0.5 ];
                 }
                 return this.arrayEqual(readPixel(gl, uv), expected, message);
             },
@@ -103,7 +101,7 @@
                 if (!expected || typeof expected === "string") {
                     message = expected;
                     expected = uv;
-                    uv = [0.5, 0.5];
+                    uv = [ 0.5, 0.5 ];
                 }
                 return this.arrayNotEqual(readPixel(gl, uv), expected, message);
             },
@@ -119,7 +117,7 @@
             doesNotThrow(fn, message) {
                 return this.notOk(checkThrow(fn), message);
             },
-            loopUntil(cond, fn) {
+            loopUntil(cond) {
                 return new Promise((resolve) => {
                     requestAnimationFrame(function loop() {
                         if (cond()) {
@@ -156,7 +154,7 @@
         gl.getBufferSubData(binding, 0, actual);
 
         return actual;
-    };
+    }
 
     function checkThrow(fn) {
         try {
@@ -167,39 +165,42 @@
         }
     }
 
+    function sanitizeAssertions(test) {
+        test.assertions.forEach((assertion) => {
+            try {
+                JSON.stringify(assertion.expected);
+            } catch(e) {
+                if (assertion.expected.constructor) {
+                    assertion.expected = `{${assertion.expected.constructor.name} object}`;
+                } else {
+                    assertion.expected = assertion.expected.toString();
+                }
+            }
+
+            try {
+                JSON.stringify(assertion.actual);
+            } catch(e) {
+                if (assertion.actual.constructor) {
+                    assertion.actual = `{${assertion.actual.constructor.name} object}`;
+                } else {
+                    assertion.actual = assertion.actual.toString();
+                }
+            }
+        });
+    }
+
     window.glTest = glTest;
 
     if (window.puppeteer_testEnd) {
-        function sanitizeAssertions(test) {
-            test.assertions.forEach((assertion) => {
-                try {
-                    JSON.stringify(assertion.expected);
-                } catch(e) {
-                    if (assertion.expected.constructor) {
-                        assertion.expected = `{${assertion.expected.constructor.name} object}`;
-                    } else {
-                        assertion.expected = assertion.expected.toString();
-                    }
-                }
-
-                try {
-                    JSON.stringify(assertion.actual);
-                } catch(e) {
-                    if (assertion.actual.constructor) {
-                        assertion.actual = `{${assertion.actual.constructor.name} object}`;
-                    } else {
-                        assertion.actual = assertion.actual.toString();
-                    }
-                }
-            });
-        }
-
         QUnit.on("testEnd", (test) => {
             sanitizeAssertions(test);
-            puppeteer_testEnd(test);
+            window.puppeteer_testEnd(test);
         });
     }
     if (window.puppeteer_runEnd) {
-        QUnit.on("runEnd", puppeteer_runEnd);
+        QUnit.on("runEnd", window.puppeteer_runEnd);
     }
-})();
+})(window.QUnit);
+
+// Don't want QUnit directly available in tests
+delete window.QUnit;
