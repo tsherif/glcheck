@@ -119,3 +119,16 @@ glTest("Async", async (t, canvas) => {
 
     t.done();
 });
+
+glTest("Bad json", async (t, canvas) => {
+    const circular1 = {a: 1};
+    circular1.circular = circular1;
+
+    const circular2 = {a: 2};
+    circular2.circular = circular2;
+
+    t.deepEqual(circular1, circular1, "deepEqual circular objects");
+    t.notDeepEqual(circular1, circular2, "notDeepEqual circular objects");
+
+    t.done();
+});

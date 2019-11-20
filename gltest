@@ -40,7 +40,8 @@ let config = {
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
-    headless: true
+    headless: true,
+    selfTest: false
 };
 
 try {
@@ -54,6 +55,8 @@ try {
         config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
     }
 } catch (e) {}
+ 
+const SELF_TEST = process.argv[2] === "--self-test";
 
 const OUTPUT_DIR = path.resolve(".", config.outputDir);
 const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
@@ -66,8 +69,10 @@ const MIME_TYPES = {
     ".js": "text/javascript",
     ".json": "application/json"
 };
+
+const coverageExcludeFiles = config.tests.concat(config.coverageExcludeFiles);
 const EXCLUDE_REGEX = [];
-config.coverageExcludeFiles.forEach(ex => {
+coverageExcludeFiles.forEach(ex => {
     glob(ex).map(f => {
         const excludePath = path.resolve(".", f).replace(CWD, "");
         EXCLUDE_REGEX.push(new RegExp(`${excludePath}$`));
@@ -86,7 +91,11 @@ const server = http.createServer(async (req, res) => {
 }).listen(config.serverPort);
 
 (async () => {
-    const template = await fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8");
+    const [ template, qunit, gltest ] = await Promise.all([
+        fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
+        fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
+        fs.readFile(path.resolve(__dirname, "page/gltest.js"), "utf8")
+    ]); 
     const testPaths = [];
     config.tests.forEach(t => {
         glob(t).map(f => {
@@ -94,17 +103,23 @@ const server = http.createServer(async (req, res) => {
             testPaths.push(`import "${modulePath}";`);
         });
     });
-    const index = template.replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
+
+    let index = template
+        .replace("QUNIT_IMPORT", qunit)
+        .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./gltest.js\"></script>" : `<script>${gltest}</script>`)
+        .replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
 
     rimraf(OUTPUT_DIR);
     rimraf(COVERAGE_DIR);
     await fs.mkdir(OUTPUT_DIR);
 
-    await Promise.all([
-        fs.writeFile(path.resolve(OUTPUT_DIR, "index.html"), index),
-        fs.copyFile(path.resolve(__dirname, "page/gltest.js"), path.resolve(OUTPUT_DIR, "gltest.js")),
-        fs.copyFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), path.resolve(OUTPUT_DIR, "qunit-2.9.2.js"))
-    ]);
+    const writes = [ fs.writeFile(path.resolve(OUTPUT_DIR, "index.html"), index) ];
+
+    if (SELF_TEST) {
+        writes.push(fs.writeFile(path.resolve(OUTPUT_DIR, "gltest.js"), gltest));
+    }
+
+    await Promise.all(writes);
 
     if (config.assetDir) {
         await fs.mkdir(ASSET_DIR);
@@ -114,11 +129,15 @@ const server = http.createServer(async (req, res) => {
     const browser = await puppeteer.launch({headless: config.headless});
     const page = await browser.newPage();
 
-    const errorMessages = [];
     page.on("console", msg => {
         if (msg.type() === "error") {
-            errorMessages.push(msg.text());
+            console.log(`\u001b[31m${msg.text()}\u001b[0m`);
         }
+    });
+
+    page.on("pageerror", async error => {
+        console.log(`\u001b[31m${error.message}\u001b[0m`);
+        process.exit(1);
     });
 
     let numTests = 0;
@@ -157,8 +176,6 @@ const server = http.createServer(async (req, res) => {
             console.log(`\t\u001b[31m${results.testCounts.failed} tests failed.\u001b[0m\n\n`);
         }
 
-        console.log(`\u001b[31m${errorMessages.join("\n")}\u001b[0m`);
-
         if (config.coverage) {
             const jsCoverage = await page.coverage.stopJSCoverage();
             pti.write(jsCoverage.filter(item => {
@@ -179,8 +196,8 @@ const server = http.createServer(async (req, res) => {
         }
 
         await Promise.all([
-            await server.close(),
-            await browser.close()
+            server.close(),
+            browser.close()
         ]);
         
         process.exit(passed ? 0 : 1);

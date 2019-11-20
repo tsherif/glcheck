@@ -3,4 +3,6 @@ language: node_js
 node_js:
   - "10"
 script:
-  - npm test
+  - npm test && npm run coverage
+after_success:
+  - cat coverage/lcov.info | coveralls
