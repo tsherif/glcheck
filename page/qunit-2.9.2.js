@@ -245,6 +245,10 @@
   		return "null";
   	}
 
+    if (ArrayBuffer.isView(obj)) {
+      return "array";
+    }
+
   	var match = toString.call(obj).match(/^\[object\s(.*)\]$/),
   	    type = match && match[1];
 

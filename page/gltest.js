@@ -67,16 +67,10 @@
             notDeepEqual(...args) {
                 return assert.notDeepEqual(...args);
             },
-            arrayEqual(actual, expected, message) {
-                return this.deepEqual(Array.from(actual), Array.from(expected), message);
-            },
-            arrayNotEqual(actual, expected, message) {
-                return this.notDeepEqual(Array.from(actual), Array.from(expected), message);
-            },
             glParameterEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
                 if (Array.isArray(actual) || ArrayBuffer.isView(actual)) {
-                    return this.arrayEqual(actual, expected, message);
+                    return this.deepEqual(actual, expected, message);
                 } else {
                     return this.equal(actual, expected, message);
                 }
@@ -84,7 +78,7 @@
             glParameterNotEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
                 if (Array.isArray(actual) || ArrayBuffer.isView(actual)) {
-                    return this.arrayNotEqual(actual, expected, message);
+                    return this.notDeepEqual(actual, expected, message);
                 } else {
                     return this.notEqual(actual, expected, message);
                 }
@@ -95,7 +89,7 @@
                     expected = uv;
                     uv = [ 0.5, 0.5 ];
                 }
-                return this.arrayEqual(readPixel(gl, uv), expected, message);
+                return this.deepEqual(readPixel(gl, uv), expected, message);
             },
             pixelNotEqual(gl, uv, expected, message) {
                 if (!expected || typeof expected === "string") {
@@ -103,13 +97,13 @@
                     expected = uv;
                     uv = [ 0.5, 0.5 ];
                 }
-                return this.arrayNotEqual(readPixel(gl, uv), expected, message);
+                return this.notDeepEqual(readPixel(gl, uv), expected, message);
             },
             bufferEqual(gl, binding, expected, message) {
-                return this.arrayEqual(readBuffer(gl, binding, expected), expected, message);
+                return this.deepEqual(readBuffer(gl, binding, expected), expected, message);
             },
             bufferNotEqual(gl, binding, expected, message) {
-                return this.arrayNotEqual(readBuffer(gl, binding, expected), expected, message);
+                return this.notDeepEqual(readBuffer(gl, binding, expected), expected, message);
             },
             throws(fn, message) {
                 return this.ok(checkThrow(fn), message);
