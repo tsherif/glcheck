@@ -12,7 +12,7 @@
   "scripts": {
     "lint": "eslint gltest page/gltest.js",
     "test": "npm run lint && ./gltest",
-    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage=true && nyc report --reporter=lcov"
+    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage && nyc report --reporter=lcov"
   },
   "keywords": [
     "webgl",
@@ -27,7 +27,6 @@
   },
   "license": "MIT",
   "dependencies": {
-    "argparse": "^1.0.10",
     "copy-dir": "^1.2.0",
     "node-glob": "^1.2.0",
     "puppeteer": "^2.0.0",

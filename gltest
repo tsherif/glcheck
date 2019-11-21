@@ -33,9 +33,20 @@ const path = require("path");
 const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
-const ArgumentParser = require("argparse").ArgumentParser;
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
+const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage] [--no-coverage] [--headless] [--browser]
+
+Test WebGL 1 and 2 applications.
+
+Optional arguments:
+  --help            Show this help message and exit.
+  --version         Show program's version number and exit.
+  --config PATH     Path to config file (default './gltest.config.json')
+  --coverage        Generate coverage results that can be consumed by Istanbul.
+  --no-coverage     Do not generate coverage results.
+  --headless        Run headless.
+  --browser         Run in a browser window.`;
 
 let config = {
     outputDir: "gltest-results/",
@@ -47,36 +58,43 @@ let config = {
     headless: true
 };
 
-const parser = new ArgumentParser({
-    version: GLTEST_PKG.version,
-    description: "Test WebGL 1 and 2 applications."
-});
+const argv = process.argv.slice(2);
+const argc = argv.length;
+const args = {
+    configPath: "gltest.config.json",
+    selfTest: false
+};
 
+for (let i = 0; i < argc; ++i) {
+    const arg = argv[i];
 
-parser.addArgument("--config", {
-    help: "Path to config file (default './gltest.config.json')",
-    metavar: "PATH",
-    defaultValue: "gltest.config.json"
-});
+    switch(arg) {
+        case "--coverage":
+        case "--no-coverage":
+            args.coverage = arg === "--coverage";
+            break;
+        case "--headless":
+        case "--browser":
+            args.headless = arg === "--headless";
+            break;
+        case "--config":
+            args.configPath = argv[++i];
+            break;
+        case "--self-test":
+            args.selfTest = true;
+            break;
+        case "--version":
+            console.log(GLTEST_PKG.version);
+            process.exit(0);
+            break;
+        case "--help":
+            console.log(HELP_MESSAGE);
+            process.exit(0);
+            break;
+    }
+}
 
-parser.addArgument("--coverage", {
-    help: "Generate coverage results that can be consumed by Istanbul (default false)",
-    metavar: "BOOL"
-});
-
-parser.addArgument("--headless", {
-    help: "Run headless (default true)",
-    metavar: "BOOL"
-});
-
-parser.addArgument("--self-test", {
-    help: "Set up for self testing",
-    nargs: 0
-});
-
-
-const args = parser.parseArgs();
-const configPath = path.resolve(".", args.config);
+const configPath = path.resolve(".", args.configPath);
 
 try {
     Object.assign(config, require(configPath));
@@ -93,15 +111,9 @@ try {
     process.exit(1);
 }
 
-if (args.coverage !== null) {
-    config.coverage = args.coverage.toLowerCase() === "true";
-}
+Object.assign(config, args);
 
-if (args.headless !== null) {
-    config.headless = args.headless.toLowerCase() === "true";
-}
-
-const SELF_TEST = Boolean(args.self_test);
+const SELF_TEST = Boolean(args.selfTest);
 const OUTPUT_DIR = path.resolve(".", config.outputDir);
 const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
