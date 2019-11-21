@@ -62,10 +62,7 @@ let config = {
 
 const argv = process.argv.slice(2);
 const argc = argv.length;
-const args = {
-    configPath: "gltest.config.json",
-    selfTest: false
-};
+const args = {};
 
 for (let i = 0; i < argc; ++i) {
     let [ flag, arg ] = argv[i].split("=");
@@ -94,6 +91,9 @@ for (let i = 0; i < argc; ++i) {
         case "--self-test":
             args.selfTest = true;
             break;
+        case "--clear-config":
+            args.clearConfig = true;
+            break;
         case "--version":
             console.log(GLTEST_PKG.version);
             process.exit(0);
@@ -113,7 +113,7 @@ for (let i = 0; i < argc; ++i) {
     }
 }
 
-const configPath = path.resolve(".", args.configPath);
+const configPath = path.resolve(".", args.configPath || "gltest.config.json");
 
 try {
     Object.assign(config, require(configPath));
@@ -125,7 +125,19 @@ try {
     if (!Array.isArray(config.coverageExcludeFiles)) {
         config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
     }
-} catch (e) {}
+} catch (e) {
+    if (args.configPath) {
+        console.log(`\u001b[31mError: Config file '${args.configPath}' not found.\u001b[0m\n`);
+        process.exit(1);
+    }
+}
+
+if (args.clearConfig) {
+    config = { 
+        tests: [],
+        coverageExcludeFiles: []
+    };
+}
 
 if (config.tests.length > 0 && args.tests) {
     console.log("\u001b[33mWarning: Tests from config file overriden by command line argument.\u001b[0m\n");
