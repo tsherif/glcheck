@@ -35,7 +35,9 @@ const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
-const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH]
+const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage {true/false}] 
+              [--headless {true/false}] [--server-port PORT] [--output-dir PATH] 
+              [--asset-dir PATH]
 
 Test WebGL 1 and 2 applications.
 
