@@ -15,7 +15,7 @@
     "test-full-config": "./gltest --config test/test-configs/full-config.json && test -d full-config-results  && test -d .nyc_output && rimraf full-config-results",
     "test-cli-args": "./gltest --clear-config --output-dir cli-results --server-port 5151 --asset-dir test/assets/ --coverage true, --headless true test/test.js && test -d cli-results  && test -d .nyc_output && rimraf cli-results",
     "test-cli-equal-args": "./gltest --clear-config --output-dir=cli-equal-results --server-port=5151 --asset-dir=test/assets/ --coverage=true --headless=true test/test.js && test -d cli-equal-results  && test -d .nyc_output && rimraf cli-equal-results",
-    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage && nyc report --reporter=lcov"
+    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage=true && nyc report --reporter=lcov"
   },
   "keywords": [
     "webgl",
