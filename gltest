@@ -35,18 +35,20 @@ const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
-const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage] [--no-coverage] [--headless] [--browser]
+const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH]
 
 Test WebGL 1 and 2 applications.
 
 Optional arguments:
-  --help            Show this help message and exit.
-  --version         Show program's version number and exit.
-  --config PATH     Path to config file (default './gltest.config.json')
-  --coverage        Generate coverage results that can be consumed by Istanbul.
-  --no-coverage     Do not generate coverage results.
-  --headless        Run headless.
-  --browser         Run in a browser window.`;
+  --help                    Show this help message and exit.
+  --version                 Show program's version number and exit.
+  --config PATH             Path to config file (default: ./gltest.config.json)
+  --coverage {true/false}   Generate coverage results that can be consumed by Istanbul [default: false].
+  --headless {true/false}   Run headless [default: true].
+  --server-port PORT        Port to run testing server on [default: 7171].
+  --output-dir PATH         Path to output results to [default: ./gltest-results].
+  --asset-dir PATH          Path to copy assets from.
+`;
 
 let config = {
     outputDir: "gltest-results/",
@@ -66,19 +68,28 @@ const args = {
 };
 
 for (let i = 0; i < argc; ++i) {
-    const arg = argv[i];
+    let [ flag, arg ] = argv[i].split("=");
 
-    switch(arg) {
+    switch(flag) {
+        case "--config":
+            args.configPath = arg || argv[++i];
+            break;
         case "--coverage":
-        case "--no-coverage":
-            args.coverage = arg === "--coverage";
+            arg = arg || argv[++i];
+            args.coverage = arg.toLowerCase() !== "false";
             break;
         case "--headless":
-        case "--browser":
-            args.headless = arg === "--headless";
+            arg = arg || argv[++i];
+            args.headless = arg.toLowerCase() !== "false";
             break;
-        case "--config":
-            args.configPath = argv[++i];
+        case "--server-port":
+            args.serverPort = parseInt(arg || argv[++i], 10);
+            break;
+        case "--output-dir":
+            args.outputDir = arg || argv[++i];
+            break;
+        case "--asset-dir":
+            args.assetDir = arg || argv[++i];
             break;
         case "--self-test":
             args.selfTest = true;
@@ -91,6 +102,14 @@ for (let i = 0; i < argc; ++i) {
             console.log(HELP_MESSAGE);
             process.exit(0);
             break;
+        default: 
+            if (flag[0] === "-") {
+                console.log(`Unknown flag: ${flag}`);
+                process.exit(1);
+            } else {
+                args.tests = args.tests || [];
+                args.tests.push(flag);
+            }
     }
 }
 
@@ -106,9 +125,10 @@ try {
     if (!Array.isArray(config.coverageExcludeFiles)) {
         config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
     }
-} catch (e) {
-    console.log(`\u001b[31mError:\u001b[0m Config file '${configPath}' not found.`);
-    process.exit(1);
+} catch (e) {}
+
+if (config.tests.length > 0 && args.tests) {
+    console.log("\u001b[33mWarning: Tests from config file overriden by command line argument.\u001b[0m\n");
 }
 
 Object.assign(config, args);

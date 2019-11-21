@@ -1,3 +1,4 @@
 {
-    "tests": "test/test.js"
+    "tests": "test/test.js",
+    "assetDir": "test/assets/"
 }

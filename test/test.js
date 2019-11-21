@@ -120,6 +120,15 @@ glTest("Async", async (t, canvas) => {
     t.done();
 });
 
+glTest("Assets", async (t, canvas) => {
+    let response = await fetch("assets/asset.json");
+    let json = await response.json();
+
+    t.equal(json.result, "PASSED", "Fetched an asset.")
+
+    t.done();
+});
+
 glTest("Bad json", async (t, canvas) => {
     const circular1 = {a: 1};
     circular1.circular = circular1;
