@@ -164,7 +164,7 @@ glTest("Basic assertions", (t, canvas) => {
 
 The tester object also exposes WebGL-specific assertions:
 - `t.glParameterEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) matches `expected`. 
-- `t.glParameterNotEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) does not `expected`. 
+- `t.glParameterNotEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) does not match `expected`. 
 - `t.pixelEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer has the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
 - `t.pixelNotEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer does not have the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
 - `t.bufferEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` contains the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
