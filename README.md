@@ -107,7 +107,7 @@ glTest("My test", async (t, canvas) => {
 });
 ```
 
-A single test can also be selected to run on its own using `glTest.only`:
+A single test can be selected to run on its own using `glTest.only`:
 
 
 ```js
@@ -120,7 +120,8 @@ glTest.only("Test I'm writing now", (t, canvas) => {
 });
 ```
 
-The test object's `done` method indicates that the test has completed and can also be used in async contexts: 
+The tester object's `done` method indicates that the test has completed and can also be used in async contexts: 
+- `t.done()`: Indicate that a test has completed.
 
 ```js
 glTest("Basic", async (t, canvas) => {
