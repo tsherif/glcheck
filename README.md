@@ -49,7 +49,7 @@ Assuming tests are in a file `test.js`, they can be run directly as follows:
 npx gltest test.js
 ```
 
-By default, `gltest` will read configuration from `gltest.config.js` in the current directory, from which it will read the following options:
+By default, `gltest` will read configuration from `gltest.config.json` in the current directory, from which it will read the following options:
 
 - **tests** (default: `[]`): List of tests to run.
 - **outputDir** (default: `"gltest-results/"`): Directory to output results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
@@ -68,7 +68,7 @@ gltest [--help] [--version] [--config PATH] [--coverage {true/false}] [--headles
 Command line arguments will always override options from the config file:
 - **--help**: Show a help message and exit.
 - **--version**: Show version number and exit.
-- **--config**: Path to config file (default: ./gltest.config.json)
+- **--config**: Path to config file (default: `"gltest.config.json"`)
 - **--output-dir** (default: `"gltest-results/"`): Directory to output results into. This will be run by puppeteer, but can also simply be opened in a browser. 
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer testing.
 - **--headless** (default: `true`): Whether to run headless.
