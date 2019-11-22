@@ -56,10 +56,10 @@
                 return assert.notOk(...args);
             },
             equal(...args) {
-                return assert.equal(...args);
+                return assert.strictEqual(...args);
             },
             notEqual(...args) {
-                return assert.notEqual(...args);
+                return assert.notStrictEqual(...args);
             },
             deepEqual(...args) {
                 return assert.deepEqual(...args);
@@ -69,19 +69,11 @@
             },
             glParameterEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
-                if (Array.isArray(actual) || ArrayBuffer.isView(actual)) {
-                    return this.deepEqual(actual, expected, message);
-                } else {
-                    return this.equal(actual, expected, message);
-                }
+                return this.deepEqual(actual, expected, message);
             },
             glParameterNotEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
-                if (Array.isArray(actual) || ArrayBuffer.isView(actual)) {
-                    return this.notDeepEqual(actual, expected, message);
-                } else {
-                    return this.notEqual(actual, expected, message);
-                }
+                return this.notDeepEqual(actual, expected, message);
             },
             pixelEqual(gl, uv, expected, message) {
                 if (!expected || typeof expected === "string") {
