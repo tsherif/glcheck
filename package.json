@@ -1,6 +1,6 @@
 {
   "name": "pico-gltest",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "A test framework for WebGL 1 and 2 applications",
   "bin": {
     "gltest": "gltest"
