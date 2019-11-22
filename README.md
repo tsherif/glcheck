@@ -167,8 +167,8 @@ The tester object also exposes WebGL-specific assertions:
 - `glParameterNotEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) does not `expected`. 
 - `pixelEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer has the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
 - `pixelNotEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer does not have the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
-- `bufferEqual(gl,[ binding=gl.ARRAY_BUFFER,] expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` contains the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
-- `bufferNotEqual(gl,[ binding=gl.ARRAY_BUFFER,] expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` does not contain the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
+- `bufferEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` contains the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
+- `bufferNotEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` does not contain the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
 
 ```js
 glTest("GL assertions", (t, canvas) => {
