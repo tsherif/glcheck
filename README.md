@@ -178,7 +178,7 @@ glTest("GL assertions", (t, canvas) => {
     t.glParameterEqual(gl, gl.VIEWPORT, [10, 20, 30, 40], "glParameterEqual array");
     
     t.pixelEqual(gl, [255, 0, 0, 255], "pixelEqual center");
-    t.pixelEqual(gl, [0.25, 0.75], [255, 0, 0, 255], "pixelEqual top-left");
+    t.pixelEqual(gl, [0.25, 0.75], [255, 0, 0, 255], "pixelEqual upper-left");
 
     // Buffer assertions are WebGL 2-only
     const floatBuffer = gl.createBuffer();
