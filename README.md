@@ -201,7 +201,7 @@ Finally, the tester object exposes the async helper `loopUntil` for tests that r
 - `t.loopUntil(fn)`: Returns a promise that will resolve when `fn` returns true.
 
 ```js
-glTest("GL assertions", async (t, canvas) => {
+glTest("loopUntil helper", async (t, canvas) => {
     const gl = canvas.getContext("webgl2");
     const query = gl.createQuery();
 
