@@ -198,7 +198,7 @@ glTest("GL assertions", (t, canvas) => {
 ```
 
 Finally, the tester object exposes the async helper `loopUntil` for tests that require asynchrony:
-- `t.loopUntil(fn)`: Returns a promise that will resolve when `fn` returns true.
+- `t.loopUntil(fn)`: Returns a promise that starts a `requestAnimationFrame` loop, calling `fn` on each frame and resolving when it returns true.
 
 ```js
 glTest("loopUntil helper", async (t, canvas) => {
