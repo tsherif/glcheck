@@ -11,8 +11,8 @@ glCheck("Test myApp", (t, canvas) => {
     const gl = canvas.createContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
-    t.glParameterEqual(gl, gl.DEPTH_TEST, true, "Depth test enabled");
-    t.glParameterNotEqual(gl, gl.DEPTH_TEST, false, "Depth test not disabled");
+    t.parameterEqual(gl, gl.DEPTH_TEST, true, "Depth test enabled");
+    t.parameterNotEqual(gl, gl.DEPTH_TEST, false, "Depth test not disabled");
 
     gl.clearColor(1, 0, 0, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -163,8 +163,8 @@ glCheck("Basic assertions", (t, canvas) => {
 ```
 
 The tester object also exposes WebGL-specific assertions:
-- `t.glParameterEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) matches `expected`. 
-- `t.glParameterNotEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) does not match `expected`. 
+- `t.parameterEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) matches `expected`. 
+- `t.parameterNotEqual(gl, parameter, expected, message)`: Check if the WebGL `parameter` (passed to `gl.getParameter`) does not match `expected`. 
 - `t.pixelEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer has the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
 - `t.pixelNotEqual(gl,[ uv=[0.5, 0.5],] expected, message)`: Check if the currently bound framebuffer does not have the value `expected` at the pixel indicated by `uv`. `uv` is a two-element array with `[0, 0]` indicating the bottom-left of the canvas, and `[1, 1]` indicating the top-right.
 - `t.bufferEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` contains the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
@@ -174,8 +174,8 @@ The tester object also exposes WebGL-specific assertions:
 glCheck("GL assertions", (t, canvas) => {
     const gl = canvas.getContext("webgl2");
 
-    t.glParameterEqual(gl, gl.DEPTH_TEST, true, "glParameterEqual");
-    t.glParameterEqual(gl, gl.VIEWPORT, [10, 20, 30, 40], "glParameterEqual array");
+    t.parameterEqual(gl, gl.DEPTH_TEST, true, "parameterEqual");
+    t.parameterEqual(gl, gl.VIEWPORT, [10, 20, 30, 40], "parameterEqual array");
     
     t.pixelEqual(gl, [255, 0, 0, 255], "pixelEqual center");
     t.pixelEqual(gl, [0.25, 0.75], [255, 0, 0, 255], "pixelEqual upper-left");

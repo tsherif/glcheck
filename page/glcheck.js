@@ -106,11 +106,11 @@ Tried to run "${name}".
                 }
                 return assert.notDeepEqual(actual, expected, message);
             },
-            glParameterEqual(gl, parameter, expected, message) {
+            parameterEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
                 return this.deepEqual(actual, expected, message);
             },
-            glParameterNotEqual(gl, parameter, expected, message) {
+            parameterNotEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
                 return this.notDeepEqual(actual, expected, message);
             },

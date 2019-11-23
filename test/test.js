@@ -30,12 +30,12 @@ glCheck("GL parameters", (t, canvas) => {
     let gl = canvas.getContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
-    t.glParameterEqual(gl, gl.DEPTH_TEST, true, "glParameterEqual primitive");
-    t.glParameterNotEqual(gl, gl.DEPTH_TEST, false, "glParameterNotEqual primitive");
+    t.parameterEqual(gl, gl.DEPTH_TEST, true, "parameterEqual primitive");
+    t.parameterNotEqual(gl, gl.DEPTH_TEST, false, "parameterNotEqual primitive");
 
     gl.viewport(10, 20, 30, 40);
-    t.glParameterEqual(gl, gl.VIEWPORT, [10, 20, 30, 40], "glParameterEqual array");
-    t.glParameterNotEqual(gl, gl.VIEWPORT, [11, 20, 30, 40], "glParameterNotEqual array");
+    t.parameterEqual(gl, gl.VIEWPORT, [10, 20, 30, 40], "parameterEqual array");
+    t.parameterNotEqual(gl, gl.VIEWPORT, [11, 20, 30, 40], "parameterNotEqual array");
     
     t.done();
 });
