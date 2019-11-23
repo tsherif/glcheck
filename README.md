@@ -139,7 +139,7 @@ glCheck("Async", async (t, canvas) => {
 
 The tester object exposes the following basic assertions:
 - `t.ok(actual, message)`: Check the truthiness of `actual`.
-- `t.noOk(actual, message)`: Check the falsiness of `actual`.
+- `t.notOk(actual, message)`: Check the falsiness of `actual`.
 - `t.equal(actual, expected, message)`: Check that `actual` and `expected` are shallowly equal.
 - `t.notEqual(actual, expected, message)`: Check that `actual` and `expected` are not shallowly equal.
 - `t.deepEqual(actual, expected, message)`: Check that `actual` and `expected` are deeply equal (e.g. for objects and arrays).
