@@ -71,21 +71,9 @@ Tried to run "${name}".
                 return assert.notOk(result, message);
             },
             equal(actual, expected, message) {
-                if (ArrayBuffer.isView(actual)) {
-                    actual = Array.from(actual);
-                }
-                if (ArrayBuffer.isView(expected)) {
-                    expected = Array.from(expected);
-                }
                 return assert.strictEqual(actual, expected, message);
             },
             notEqual(actual, expected, message) {
-                if (ArrayBuffer.isView(actual)) {
-                    actual = Array.from(actual);
-                }
-                if (ArrayBuffer.isView(expected)) {
-                    expected = Array.from(expected);
-                }
                 return assert.notStrictEqual(actual, expected, message);
             },
             deepEqual(actual, expected, message) {
