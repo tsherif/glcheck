@@ -1,13 +1,13 @@
-pico-gltest
+glcheck
 ===========
 
-[![Build Status](https://travis-ci.com/tsherif/pico-gltest.svg?branch=master)](https://travis-ci.com/tsherif/pico-gltest) [![Coverage Status](https://coveralls.io/repos/github/tsherif/pico-gltest/badge.svg?branch=master)](https://coveralls.io/github/tsherif/pico-gltest?branch=master) [![License](https://img.shields.io/github/license/tsherif/pico-gltest.svg)](https://github.com/tsherif/pico-gltest/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/pico-gltest.svg)](https://www.npmjs.com/package/pico-gltest)
+[![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://coveralls.io/repos/github/tsherif/glcheck/badge.svg?branch=master)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
 
-**pico-gltest** is a testing framework focused on WebGL applications. It is designed to run in a browser without any build steps, making it straightforward to use across browsers and platforms. It uses puppeteer to run headlessly via the command line which allows it to run automated tests for both WebGL 1 and 2 applications. A slimple test suite using **pico-gltest** might look like the following:
+**glcheck** is a testing framework focused on WebGL applications. It is designed to run in a browser without any build steps, making it straightforward to use across browsers and platforms. It uses puppeteer to run headlessly via the command line which allows it to run automated tests for both WebGL 1 and 2 applications. A slimple test suite using **glcheck** might look like the following:
 
 ```js
 
-glTest("Test myApp", (t, canvas) => {
+glCheck("Test myApp", (t, canvas) => {
     const gl = canvas.createContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
@@ -38,7 +38,7 @@ glTest("Test myApp", (t, canvas) => {
 To install, simply run:
 
 ```bash
-npm i -D pico-gltest
+npm i -D glcheck
 ```
 
 ### Running
@@ -46,30 +46,30 @@ npm i -D pico-gltest
 Assuming tests are in a file `test.js`, they can be run directly as follows:
 
 ```bash
-npx gltest test.js
+npx glcheck test.js
 ```
 
-By default, `gltest` will read configuration from `gltest.config.json` in the current directory, from which it will read the following options:
+By default, `glcheck` will read configuration from `glcheck.config.json` in the current directory, from which it will read the following options:
 
 - **tests** (default: `[]`): List of tests to run.
-- **outputDir** (default: `"gltest-results/"`): Directory to output results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
+- **outputDir** (default: `"glcheck-results/"`): Directory to output results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
 - **serverPort** (default: `7171`): Port to run the local server on for puppeteer testing.
 - **headless** (default: `true`): Whether to run headless.
 - **assetDir** (default: `null`): Directory to load assets from. Contents from this directory will be available to tests in the subdirectory `assets/`.
 - **coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
 - **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **tests** are always excluded from coverage reports.
 
-Full `gltest` command line usage is as follows:
+Full `glcheck` command line usage is as follows:
 
 ```bash
-gltest [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH] [TEST FILES...]
+glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH] [TEST FILES...]
 ```
 
 Command line arguments will always override options from the config file:
 - **--help**: Show a help message and exit.
 - **--version**: Show version number and exit.
-- **--config**: Path to config file (default: `"gltest.config.json"`)
-- **--output-dir** (default: `"gltest-results/"`): Directory to output results into. This will be run by puppeteer, but can also simply be opened in a browser. 
+- **--config**: Path to config file (default: `"glcheck.config.json"`)
+- **--output-dir** (default: `"glcheck-results/"`): Directory to output results into. This will be run by puppeteer, but can also simply be opened in a browser. 
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer testing.
 - **--headless** (default: `true`): Whether to run headless.
 - **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
@@ -78,11 +78,11 @@ Command line arguments will always override options from the config file:
 
 ### Writing Tests
 
-Tests are defined for `pico-gltest` using the `glTest` function. The general structure is as follows:
+Tests are defined for `glcheck` using the `glCheck` function. The general structure is as follows:
 
 ```js
 
-glTest("My test", (t, canvas) => {
+glCheck("My test", (t, canvas) => {
 
     // Write some tests
 
@@ -97,7 +97,7 @@ Test functions can also be async:
 
 ```js
 
-glTest("My test", async (t, canvas) => {
+glCheck("My test", async (t, canvas) => {
 
     const data = await getAsyncData();
 
@@ -107,12 +107,12 @@ glTest("My test", async (t, canvas) => {
 });
 ```
 
-A single test can be selected to run on its own using `glTest.only`:
+A single test can be selected to run on its own using `glCheck.only`:
 
 
 ```js
 
-glTest.only("Test I'm writing now", (t, canvas) => {
+glCheck.only("Test I'm writing now", (t, canvas) => {
 
     // Write some tests
 
@@ -124,12 +124,12 @@ The tester object's `done` method indicates that the test has completed and can 
 - `t.done()`: Indicate that a test has completed.
 
 ```js
-glTest("Basic", async (t, canvas) => {
+glCheck("Basic", async (t, canvas) => {
     t.ok(true, "ok");
     t.done();
 });
 
-glTest("Async", async (t, canvas) => {
+glCheck("Async", async (t, canvas) => {
     setTimeout(() => {
         t.ok(true, "ok");
         t.done();
@@ -148,7 +148,7 @@ The tester object exposes the following basic assertions:
 - `t.doesNotThrow(fn, message)`: Check that `fn` does not throw an exception.
 
 ```js
-glTest("Basic assertions", (t, canvas) => {
+glCheck("Basic assertions", (t, canvas) => {
     t.ok(true, "ok");
     t.equal(1, 1, "equal");
     t.deepEqual({a: 1, b: 2}, {a: 1, b: 2}, "deepEqual");
@@ -171,7 +171,7 @@ The tester object also exposes WebGL-specific assertions:
 - `t.bufferNotEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` does not contain the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
 
 ```js
-glTest("GL assertions", (t, canvas) => {
+glCheck("GL assertions", (t, canvas) => {
     const gl = canvas.getContext("webgl2");
 
     t.glParameterEqual(gl, gl.DEPTH_TEST, true, "glParameterEqual");
@@ -201,7 +201,7 @@ Finally, the tester object exposes the async helper `loopUntil` for tests that r
 - `t.loopUntil(fn)`: Returns a promise that starts a `requestAnimationFrame` loop, calling `fn` on each frame and resolving when it returns true.
 
 ```js
-glTest("loopUntil helper", async (t, canvas) => {
+glCheck("loopUntil helper", async (t, canvas) => {
     const gl = canvas.getContext("webgl2");
     const query = gl.createQuery();
 

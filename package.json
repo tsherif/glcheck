@@ -1,21 +1,19 @@
 {
-  "name": "pico-gltest",
+  "name": "glcheck",
   "version": "0.0.14",
   "description": "A test framework for WebGL 1 and 2 applications",
-  "bin": {
-    "gltest": "gltest"
-  },
+  "bin": "glcheck",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tsherif/pico-gltest"
+    "url": "https://github.com/tsherif/glcheck"
   },
   "scripts": {
-    "lint": "eslint gltest page/gltest.js",
-    "test": "npm run lint && ./gltest && npm run test-full-config && npm run test-cli-args && npm run test-cli-equal-args",
-    "test-full-config": "./gltest --config test/test-configs/full-config.json && test -d full-config-results  && test -d .nyc_output && rimraf full-config-results",
-    "test-cli-args": "./gltest --clear-config --output-dir cli-results --server-port 5151 --asset-dir test/assets/ --coverage true, --headless true test/test.js && test -d cli-results  && test -d .nyc_output && rimraf cli-results",
-    "test-cli-equal-args": "./gltest --clear-config --output-dir=cli-equal-results --server-port=5151 --asset-dir=test/assets/ --coverage=true --headless=true test/test.js && test -d cli-equal-results  && test -d .nyc_output && rimraf cli-equal-results",
-    "coverage": "rimraf coverage/ && ./gltest --self-test --coverage=true && nyc report --reporter=lcov"
+    "lint": "eslint glcheck page/glcheck.js",
+    "test": "npm run lint && ./glcheck && npm run test-full-config && npm run test-cli-args && npm run test-cli-equal-args",
+    "test-full-config": "./glcheck --config test/test-configs/full-config.json && test -d full-config-results  && test -d .nyc_output && rimraf full-config-results",
+    "test-cli-args": "./glcheck --clear-config --output-dir cli-results --server-port 5151 --asset-dir test/assets/ --coverage true, --headless true test/test.js && test -d cli-results  && test -d .nyc_output && rimraf cli-results",
+    "test-cli-equal-args": "./glcheck --clear-config --output-dir=cli-equal-results --server-port=5151 --asset-dir=test/assets/ --coverage=true --headless=true test/test.js && test -d cli-equal-results  && test -d .nyc_output && rimraf cli-equal-results",
+    "coverage": "rimraf coverage/ && ./glcheck --self-test --coverage=true && nyc report --reporter=lcov"
   },
   "keywords": [
     "webgl",

@@ -26,14 +26,14 @@
     let onlyRunning = false;
     let onlyTest = null;
     
-    function glTest(name, fn) {
+    function glCheck(name, fn) {
         QUnit.test(name, (assert) => runTest(assert, fn));
     }
 
-    glTest.only = function only(name, fn) {
+    glCheck.only = function only(name, fn) {
         if (onlyRunning) {
             const errorMessage = `
-glTest.only can only be run with one test at a time.
+glCheck.only can only be run with one test at a time.
 Already running "${onlyTest}".
 Tried to run "${name}".      
             `.trim();
@@ -214,17 +214,17 @@ Tried to run "${name}".
         });
     }
 
-    window.glTest = glTest;
+    window.glCheck = glCheck;
 
-    // Functions exposed by gltest test runner
-    if (window.gltest_testEnd) {
+    // Functions exposed by glcheck test runner
+    if (window.glcheck_testEnd) {
         QUnit.on("testEnd", (test) => {
             sanitizeAssertions(test);
-            window.gltest_testEnd(test);
+            window.glcheck_testEnd(test);
         });
     }
-    if (window.gltest_runEnd) {
-        QUnit.on("runEnd", window.gltest_runEnd);
+    if (window.glcheck_runEnd) {
+        QUnit.on("runEnd", window.glcheck_runEnd);
     }
 })(window.QUnit);
 

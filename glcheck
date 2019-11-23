@@ -40,7 +40,7 @@ const rimraf = require("rimraf").sync;
 
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
-const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage {true/false}] 
+const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
               [--headless {true/false}] [--server-port PORT] [--output-dir PATH] 
               [--asset-dir PATH]
 
@@ -49,16 +49,16 @@ Test WebGL 1 and 2 applications.
 Optional arguments:
   --help                    Show this help message and exit.
   --version                 Show program's version number and exit.
-  --config PATH             Path to config file (default: ./gltest.config.json)
+  --config PATH             Path to config file (default: ./glcheck.config.json)
   --coverage {true/false}   Generate coverage results that can be consumed by Istanbul [default: false].
   --headless {true/false}   Run headless [default: true].
   --server-port PORT        Port to run testing server on [default: 7171].
-  --output-dir PATH         Path to output results to [default: ./gltest-results].
+  --output-dir PATH         Path to output results to [default: ./glcheck-results].
   --asset-dir PATH          Path to copy assets from.
 `;
 
 let config = {
-    outputDir: "gltest-results/",
+    outputDir: "glcheck-results/",
     serverPort: 7171,
     tests: [],
     assetDir: null,
@@ -120,7 +120,7 @@ for (let i = 0; i < argc; ++i) {
     }
 }
 
-const configPath = path.resolve(".", args.configPath || "gltest.config.json");
+const configPath = path.resolve(".", args.configPath || "glcheck.config.json");
 
 try {
     Object.assign(config, require(configPath));
@@ -213,10 +213,10 @@ const server = http.createServer(async (req, res) => {
     // COPY FILES INTO OUTPUT DIR
     ///////////////////////////////
 
-    const [ template, qunit, gltest ] = await Promise.all([
+    const [ template, qunit, glcheck ] = await Promise.all([
         fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
         fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
-        fs.readFile(path.resolve(__dirname, "page/gltest.js"), "utf8")
+        fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8")
     ]); 
     const testPaths = [];
     config.tests.forEach(t => {
@@ -228,7 +228,7 @@ const server = http.createServer(async (req, res) => {
 
     let index = template
         .replace("QUNIT_IMPORT", qunit)
-        .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./gltest.js\"></script>" : `<script>${gltest}</script>`)
+        .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./glcheck.js\"></script>" : `<script>${glcheck}</script>`)
         .replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
 
     rimraf(OUTPUT_DIR);
@@ -242,8 +242,8 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (SELF_TEST) {
-        // Include gltest.js as external script so it shows up in coverage reports
-        writes.push(fs.writeFile(path.resolve(OUTPUT_DIR, "gltest.js"), gltest));
+        // Include glcheck.js as external script so it shows up in coverage reports
+        writes.push(fs.writeFile(path.resolve(OUTPUT_DIR, "glcheck.js"), glcheck));
     }
 
     await Promise.all(writes);
@@ -278,7 +278,7 @@ const server = http.createServer(async (req, res) => {
     // Report results per test
     let numTests = 0;
     let numAssertions = 0;
-    const testEndPromise = page.exposeFunction("gltest_testEnd", async (test) => {
+    const testEndPromise = page.exposeFunction("glcheck_testEnd", async (test) => {
         const assertions = test.assertions;
         const count = assertions.length;
         if (count === 0) {
@@ -303,7 +303,7 @@ const server = http.createServer(async (req, res) => {
     });
 
     // Report final results
-    const runEndPromise = page.exposeFunction("gltest_runEnd", async (results) => {
+    const runEndPromise = page.exposeFunction("glcheck_runEnd", async (results) => {
         console.log(`\nRan ${numTests} tests (${numAssertions} assertions)...\n`);
 
         const passed = results.status === "passed";
