@@ -1,7 +1,7 @@
 glcheck
 ===========
 
-[![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://coveralls.io/repos/github/tsherif/glcheck/badge.svg?branch=master)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
+[![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://img.shields.io/coveralls/github/tsherif/glcheck)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
 
 **glcheck** is a testing framework focused on WebGL applications. It is designed to run in a browser without any build steps, making it straightforward to use across browsers and platforms. It uses puppeteer to run headlessly via the command line which allows it to run automated tests for both WebGL 1 and 2 applications. A slimple test suite using **glcheck** might look like the following:
 
