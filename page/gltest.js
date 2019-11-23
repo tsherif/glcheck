@@ -22,12 +22,27 @@
 ///////////////////////////////////////////////////////////////////////////////////
 
 (function(QUnit) {
+
+    let onlyRunning = false;
+    let onlyTest = null;
     
     function glTest(name, fn) {
         QUnit.test(name, (assert) => runTest(assert, fn));
     }
 
-    glTest.only = function glTest(name, fn) {
+    glTest.only = function only(name, fn) {
+        if (onlyRunning) {
+            const errorMessage = `
+glTest.only can only be run with one test at a time.
+Already running "${onlyTest}".
+Tried to run "${name}".      
+            `.trim();
+            throw new Error(errorMessage);            
+        }
+
+        onlyRunning = true;
+        onlyTest = name;
+
         QUnit.only(name, (assert) => runTest(assert, fn));
     };
 
@@ -49,23 +64,47 @@
 
     function tester(assert, resolve) {
         return {
-            ok(...args) {
-                return assert.ok(...args);
+            ok(result, message) {
+                return assert.ok(result, message);
             },
-            notOk(...args) {
-                return assert.notOk(...args);
+            notOk(result, message) {
+                return assert.notOk(result, message);
             },
-            equal(...args) {
-                return assert.strictEqual(...args);
+            equal(actual, expected, message) {
+                if (ArrayBuffer.isView(actual)) {
+                    actual = Array.from(actual);
+                }
+                if (ArrayBuffer.isView(expected)) {
+                    expected = Array.from(expected);
+                }
+                return assert.strictEqual(actual, expected, message);
             },
-            notEqual(...args) {
-                return assert.notStrictEqual(...args);
+            notEqual(actual, expected, message) {
+                if (ArrayBuffer.isView(actual)) {
+                    actual = Array.from(actual);
+                }
+                if (ArrayBuffer.isView(expected)) {
+                    expected = Array.from(expected);
+                }
+                return assert.notStrictEqual(actual, expected, message);
             },
-            deepEqual(...args) {
-                return assert.deepEqual(...args);
+            deepEqual(actual, expected, message) {
+                if (ArrayBuffer.isView(actual)) {
+                    actual = Array.from(actual);
+                }
+                if (ArrayBuffer.isView(expected)) {
+                    expected = Array.from(expected);
+                }
+                return assert.deepEqual(actual, expected, message);
             },
-            notDeepEqual(...args) {
-                return assert.notDeepEqual(...args);
+            notDeepEqual(actual, expected, message) {
+                if (ArrayBuffer.isView(actual)) {
+                    actual = Array.from(actual);
+                }
+                if (ArrayBuffer.isView(expected)) {
+                    expected = Array.from(expected);
+                }
+                return assert.notDeepEqual(actual, expected, message);
             },
             glParameterEqual(gl, parameter, expected, message) {
                 let actual = gl.getParameter(parameter);
