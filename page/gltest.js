@@ -177,14 +177,15 @@
 
     window.glTest = glTest;
 
-    if (window.puppeteer_testEnd) {
+    // Functions exposed by gltest test runner
+    if (window.gltest_testEnd) {
         QUnit.on("testEnd", (test) => {
             sanitizeAssertions(test);
-            window.puppeteer_testEnd(test);
+            window.gltest_testEnd(test);
         });
     }
-    if (window.puppeteer_runEnd) {
-        QUnit.on("runEnd", window.puppeteer_runEnd);
+    if (window.gltest_runEnd) {
+        QUnit.on("runEnd", window.gltest_runEnd);
     }
 })(window.QUnit);
 

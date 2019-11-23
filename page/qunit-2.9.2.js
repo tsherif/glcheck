@@ -7,6 +7,11 @@
  * https://jquery.org/license
  *
  * Date: 2019-02-21T22:49Z
+ *
+ * Modifications for gltest by Tarek Sherif (c) 2019:
+ * - assert.deepEqual considers typed arrays equivalent to js arrays.
+ * - "negative" property from test details exposed in reports.
+ * - QUnit.only will throw an exception if called on more then one test.
  */
 (function (global$1) {
   'use strict';
@@ -2892,6 +2897,7 @@
   }();
 
   var focused$1 = false;
+  var focusedTest = null;
 
   function Test(settings) {
   	var i, l;
@@ -3551,12 +3557,18 @@
 
   // Will be exposed as QUnit.only
   function only(testName, callback) {
-  	if (focused$1) {
-  		return;
-  	}
+   if (focused$1) {
+      var errorMessage = `
+There can only be one "only" test at a time.
+Already running "${focusedTest}".
+Tried to run "${testName}".      
+      `.trim();
+      throw new Error(errorMessage);
+    }
 
   	config.queue.length = 0;
   	focused$1 = true;
+    focusedTest = testName;
 
   	var newTest = new Test({
   		testName: testName,

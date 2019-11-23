@@ -34,6 +34,11 @@ const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
 
+//////////////////
+// CONFIGURATION
+//////////////////
+
+
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: gltest [--help] [--version] [--config PATH] [--coverage {true/false}] 
               [--headless {true/false}] [--server-port PORT] [--output-dir PATH] 
@@ -147,17 +152,35 @@ if (config.tests.length > 0 && args.tests) {
 
 Object.assign(config, args);
 
+
+
 const SELF_TEST = Boolean(args.selfTest);
 const OUTPUT_DIR = path.resolve(".", config.outputDir);
 const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const CWD = process.cwd();
 const BASE_URL = `http://localhost:${config.serverPort}/`;
+
+
+/////////////////
+// LOCAL SERVER
+/////////////////
+
 const MIME_TYPES = {
     ".css": "text/css",
     ".html": "text/html",
     ".js": "text/javascript",
-    ".json": "application/json"
+    ".json": "application/json",
+    ".txt": "text/plain",
+    ".jpeg": "image/jpeg",
+    ".jpg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".bmp": "image/bmp",
+    ".mov": "video/quicktime",
+    ".mpeg": "video/mpeg",
+    ".mpg": "video/mpeg",
+    ".ogv": "video/ogg"
 };
 
 const coverageExcludeFiles = config.tests.concat(config.coverageExcludeFiles);
@@ -180,7 +203,16 @@ const server = http.createServer(async (req, res) => {
     res.end(content);
 }).listen(config.serverPort);
 
+//////////////
+// RUN TESTS
+//////////////
+
 (async () => {
+
+    ///////////////////////////////
+    // COPY FILES INTO OUTPUT DIR
+    ///////////////////////////////
+
     const [ template, qunit, gltest ] = await Promise.all([
         fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
         fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
@@ -205,34 +237,48 @@ const server = http.createServer(async (req, res) => {
 
     const writes = [ fs.writeFile(path.resolve(OUTPUT_DIR, "index.html"), index) ];
 
+    if (config.assetDir) {
+        writes.push(fs.mkdir(ASSET_DIR));
+    }
+
     if (SELF_TEST) {
+        // Include gltest.js as external script so it shows up in coverage reports
         writes.push(fs.writeFile(path.resolve(OUTPUT_DIR, "gltest.js"), gltest));
     }
 
     await Promise.all(writes);
 
     if (config.assetDir) {
-        await fs.mkdir(ASSET_DIR);
         copydir(path.resolve(".", config.assetDir), ASSET_DIR);
     }
+
+    /////////////////////
+    // LAUNCH PUPPETEER
+    /////////////////////
 
     const browser = await puppeteer.launch({headless: config.headless});
     const page = await browser.newPage();
 
+    // Report errors from the page
     page.on("console", msg => {
         if (msg.type() === "error") {
-            console.log(`\u001b[31m${msg.text()}\u001b[0m`);
+            console.log(`\u001b[31m${msg.text()}\u001b[0m\n`);
         }
     });
 
-    page.on("pageerror", async error => {
-        console.log(`\u001b[31m${error.message}\u001b[0m`);
+    page.on("pageerror", error => {
+        console.log(`\u001b[31m${error.message}\u001b[0m\n`);
+
+        server.close();
+        browser.close();
+
         process.exit(1);
     });
 
+    // Report results per test
     let numTests = 0;
     let numAssertions = 0;
-    await page.exposeFunction("puppeteer_testEnd", async (test) => {
+    const testEndPromise = page.exposeFunction("gltest_testEnd", async (test) => {
         const assertions = test.assertions;
         const count = assertions.length;
         if (count === 0) {
@@ -256,7 +302,8 @@ const server = http.createServer(async (req, res) => {
         }
     });
 
-    await page.exposeFunction("puppeteer_runEnd", async (results) => {
+    // Report final results
+    const runEndPromise = page.exposeFunction("gltest_runEnd", async (results) => {
         console.log(`\nRan ${numTests} tests (${numAssertions} assertions)...\n`);
 
         const passed = results.status === "passed";
@@ -270,10 +317,15 @@ const server = http.createServer(async (req, res) => {
             const jsCoverage = await page.coverage.stopJSCoverage();
             pti.write(jsCoverage.filter(item => {
                 const url = item.url;
-                if (url.match(/index\.html$/)) {
+
+                // Filter out scripts embedded in index.html
+                // (i.e. test runner scripts)
+                if (url.match(/\/index\.html$/)) {
                     return false;
                 }
 
+                // Filter out test files and files
+                // excluded by config
                 let include = true;
                 EXCLUDE_REGEX.forEach(ex => {
                     if (url.match(ex)) {
@@ -293,9 +345,14 @@ const server = http.createServer(async (req, res) => {
         process.exit(passed ? 0 : 1);
     });
 
+    const pageStartPromises = [ testEndPromise, runEndPromise ];
+
     if (config.coverage) {
-        await page.coverage.startJSCoverage();
+        pageStartPromises.push(page.coverage.startJSCoverage());
     }
+
+    await Promise.all(pageStartPromises);
     
     page.goto(`${BASE_URL}${config.outputDir}/index.html`);
 })();
+
