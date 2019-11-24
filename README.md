@@ -68,7 +68,7 @@ glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headle
 Command line arguments will always override options from the config file:
 - **--help**: Show a help message and exit.
 - **--version**: Show version number and exit.
-- **--config**: Path to config file (default: `"glcheck.config.json"`)
+- **--config** (default: `"glcheck.config.json"`): Path to config file.
 - **--output-dir** (default: `"glcheck-results/"`): Directory to output results into. This will be run by puppeteer, but can also simply be opened in a browser. 
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer testing.
 - **--headless** (default: `true`): Whether to run headless.
