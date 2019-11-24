@@ -61,6 +61,8 @@ let config = {
     outputDir: "glcheck-results/",
     serverPort: 7171,
     tests: [],
+    renderTests: [],
+    referenceImages: null,
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
@@ -276,83 +278,97 @@ const server = http.createServer(async (req, res) => {
     });
 
     // Report results per test
-    let numTests = 0;
-    let numAssertions = 0;
-    const testEndPromise = page.exposeFunction("glcheck_testEnd", async (test) => {
-        const assertions = test.assertions;
-        const count = assertions.length;
-        if (count === 0) {
-            return;
-        }
-        numTests++;
-        numAssertions += count;
-        if (test.status === "passed") {
-            console.log(`\u001b[32m\u2714\u001b[0m ${test.name}`);
-        } else {
-            for (let j = 0; j < count; ++j) {
-                const assertion = assertions[j];
-                if (!assertion.passed) {
-                    console.log(`\n\u001b[31m\u274c\u001b[0m ${test.name}: ${assertion.message}`);
-                    console.log(`    ${assertion.negative ? "Did not expect:" : "Expected: "}\u001b[32m ${JSON.stringify(assertion.expected)}\u001b[0m`);
-                    console.log(`    Got:${" ".repeat(assertion.negative ? 11 : 6)}\u001b[31m ${JSON.stringify(assertion.actual)}\u001b[0m\n`);
-                    console.log(assertion.stack);
-                    console.log("\n");
+    let results = {
+        passed: true,
+        numTests: 0,
+        numAssertions: 0,
+        numFailed: 0
+    };
+
+    const unitTestPromise = new Promise(async (resolve, reject) => {
+        const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
+            const assertions = test.assertions;
+            const count = assertions.length;
+            if (count === 0) {
+                return;
+            }
+            results.numTests++;
+            results.numAssertions += count;
+            if (test.status === "passed") {
+                console.log(`\u001b[32m\u2714\u001b[0m ${test.name}`);
+            } else {
+                for (let j = 0; j < count; ++j) {
+                    const assertion = assertions[j];
+                    if (!assertion.passed) {
+                        console.log(`\n\u001b[31m\u274c\u001b[0m ${test.name}: ${assertion.message}`);
+                        console.log(`    ${assertion.negative ? "Did not expect:" : "Expected: "}\u001b[32m ${JSON.stringify(assertion.expected)}\u001b[0m`);
+                        console.log(`    Got:${" ".repeat(assertion.negative ? 11 : 6)}\u001b[31m ${JSON.stringify(assertion.actual)}\u001b[0m\n`);
+                        console.log(assertion.stack);
+                        console.log("\n");
+                    }
                 }
             }
-        }
-    });
+        });
 
-    // Report final results
-    const runEndPromise = page.exposeFunction("glcheck_runEnd", async (results) => {
-        console.log(`\nRan ${numTests} tests (${numAssertions} assertions)...\n`);
+        // Report final results
+        const runEndPromise = page.exposeFunction("glcheck_runEnd", (run) => {
+            results.passed = run.status === "passed";
+            results.numFailed = run.testCounts.failed;
 
-        const passed = results.status === "passed";
-        if (passed) {
-            console.log("\u001b[32mAll tests passed!\u001b[0m\n");
-        } else {
-            console.log(`\t\u001b[31m${results.testCounts.failed} tests failed.\u001b[0m\n\n`);
-        }
+            resolve();
+        });
+
+        const pageStartPromises = [ testEndPromise, runEndPromise ];
 
         if (config.coverage) {
-            const jsCoverage = await page.coverage.stopJSCoverage();
-            pti.write(jsCoverage.filter(item => {
-                const url = item.url;
-
-                // Filter out scripts embedded in index.html
-                // (i.e. test runner scripts)
-                if (url.match(/\/index\.html$/)) {
-                    return false;
-                }
-
-                // Filter out test files and files
-                // excluded by config
-                let include = true;
-                EXCLUDE_REGEX.forEach(ex => {
-                    if (url.match(ex)) {
-                        include = false;
-                    }
-                });
-
-                return include; 
-            }));
+            pageStartPromises.push(page.coverage.startJSCoverage());
         }
 
-        await Promise.all([
-            server.close(),
-            browser.close()
-        ]);
+        await Promise.all(pageStartPromises);
         
-        process.exit(passed ? 0 : 1);
+        page.goto(`${BASE_URL}${config.outputDir}/index.html`);
     });
 
-    const pageStartPromises = [ testEndPromise, runEndPromise ];
+    await unitTestPromise;
 
     if (config.coverage) {
-        pageStartPromises.push(page.coverage.startJSCoverage());
+        const jsCoverage = await page.coverage.stopJSCoverage();
+        pti.write(jsCoverage.filter(item => {
+            const url = item.url;
+
+            // Filter out scripts embedded in index.html
+            // (i.e. test runner scripts)
+            if (url.match(/\/index\.html$/)) {
+                return false;
+            }
+
+            // Filter out test files and files
+            // excluded by config
+            let include = true;
+            EXCLUDE_REGEX.forEach(ex => {
+                if (url.match(ex)) {
+                    include = false;
+                }
+            });
+
+            return include; 
+        }));
     }
 
-    await Promise.all(pageStartPromises);
+    console.log(`\nRan ${results.numTests} tests (${results.numAssertions} assertions)...\n`);
+
+    if (results.passed) {
+        console.log("\u001b[32mAll tests passed!\u001b[0m\n");
+    } else {
+        console.log(`\t\u001b[31m${results.failed} tests failed.\u001b[0m\n\n`);
+    }
+
+    await Promise.all([
+        server.close(),
+        browser.close()
+    ]);
     
-    page.goto(`${BASE_URL}${config.outputDir}/index.html`);
+    process.exit(results.passed ? 0 : 1);
+
 })();
 

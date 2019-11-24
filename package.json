@@ -30,6 +30,8 @@
   "dependencies": {
     "copy-dir": "^1.2.0",
     "node-glob": "^1.2.0",
+    "pixelmatch": "^5.1.0",
+    "pngjs": "^3.4.0",
     "puppeteer": "^2.0.0",
     "puppeteer-to-istanbul": "^1.2.2",
     "rimraf": "^3.0.0"
