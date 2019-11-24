@@ -277,6 +277,10 @@ const server = http.createServer(async (req, res) => {
         process.exit(1);
     });
 
+    if (config.coverage) {
+        await page.coverage.startJSCoverage();
+    }
+
     // Report results per test
     let results = {
         passed: true,
@@ -285,7 +289,7 @@ const server = http.createServer(async (req, res) => {
         numFailed: 0
     };
 
-    const unitTestPromise = new Promise(async (resolve, reject) => {
+    const unitTestPromise = new Promise((resolve) => {
         const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
             const assertions = test.assertions;
             const count = assertions.length;
@@ -318,15 +322,8 @@ const server = http.createServer(async (req, res) => {
             resolve();
         });
 
-        const pageStartPromises = [ testEndPromise, runEndPromise ];
-
-        if (config.coverage) {
-            pageStartPromises.push(page.coverage.startJSCoverage());
-        }
-
-        await Promise.all(pageStartPromises);
-        
-        page.goto(`${BASE_URL}${config.outputDir}/index.html`);
+        return Promise.all([ testEndPromise, runEndPromise ])
+            .then(() => page.goto(`${BASE_URL}${config.outputDir}/index.html`));
     });
 
     await unitTestPromise;
