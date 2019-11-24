@@ -139,5 +139,29 @@ glCheck("Bad json", async (t, canvas) => {
     t.deepEqual(circular1, circular1, "deepEqual circular objects");
     t.notDeepEqual(circular1, circular2, "notDeepEqual circular objects");
 
+    const circular3 = {a: 1};
+    circular3.circular = circular3;
+    circular3.constructor = null;
+
+    const circular4 = {a: 2};
+    circular4.circular = circular4;
+    circular4.constructor = null;
+
+    t.deepEqual(circular3, circular3, "deepEqual circular objects with no constructor");
+    t.notDeepEqual(circular3, circular4, "notDeepEqual circular objects with no constructor");
+
+    const circular5 = {a: 1};
+    circular5.circular = circular5;
+    circular5.constructor = null;
+    circular5.toString = null;
+
+    const circular6 = {a: 2};
+    circular6.circular = circular6;
+    circular6.constructor = null;
+    circular6.toString = null;
+
+    t.deepEqual(circular5, circular5, "deepEqual circular objects with no constructor, no toString");
+    t.notDeepEqual(circular5, circular6, "notDeepEqual circular objects with no constructor, no toString");
+
     t.done();
 });

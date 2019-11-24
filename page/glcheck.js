@@ -186,7 +186,8 @@ Tried to run "${name}".
                 if (assertion.expected.constructor) {
                     assertion.expected = `{${assertion.expected.constructor.name} object}`;
                 } else {
-                    assertion.expected = assertion.expected.toString();
+                    let toString = assertion.expected.toString || Object.prototype.toString;
+                    assertion.expected = toString.call(assertion.expected);
                 }
             }
 
@@ -196,7 +197,8 @@ Tried to run "${name}".
                 if (assertion.actual.constructor) {
                     assertion.actual = `{${assertion.actual.constructor.name} object}`;
                 } else {
-                    assertion.actual = assertion.actual.toString();
+                    let toString = assertion.actual.toString || Object.prototype.toString;
+                    assertion.actual = toString.call(assertion.actual);
                 }
             }
         });
