@@ -32,8 +32,8 @@ const path = require("path");
 const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
-const PNG = require('pngjs').PNG.sync;
-const pixelmatch = require('pixelmatch');
+const PNG = require("pngjs").PNG.sync;
+const pixelmatch = require("pixelmatch");
 
 //////////////////
 // CONFIGURATION
@@ -42,29 +42,31 @@ const pixelmatch = require('pixelmatch');
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
-              [--headless {true/false}] [--server-port PORT] [--output-dir PATH] 
-              [--asset-dir PATH]
+              [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
+              [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH]
 
 Test WebGL 1 and 2 applications.
 
 Optional arguments:
-  --help                    Show this help message and exit.
-  --version                 Show program's version number and exit.
-  --config PATH             Path to config file (default: ./glcheck.config.json)
-  --coverage {true/false}   Generate coverage results that can be consumed by Istanbul [default: false].
-  --headless {true/false}   Run headless [default: true].
-  --server-port PORT        Port to run testing server on [default: 7171].
-  --output-dir PATH         Path to output results to [default: ./glcheck-results].
-  --asset-dir PATH          Path to copy assets from.
+  --help                        Show this help message and exit.
+  --version                     Show program's version number and exit.
+  --config PATH                 Path to config file (default: ./glcheck.config.json)
+  --coverage {true/false}       Generate coverage results that can be consumed by Istanbul [default: false].
+  --headless {true/false}       Run headless [default: true].
+  --server-port PORT            Port to run testing server on [default: 7171].
+  --render-test-threshold VAL   Match threshold between 0 and 1 for render tests [default: 0.99].
+  --unit-test-dir PATH             Path to output results to [default: glcheck-tests/unit-tests/].
+  --reference-image-dir PATH    Path to output results to [default: glcheck-tests/reference-images/].
+  --asset-dir PATH              Path to copy assets from.
 `;
 
 let config = {
-    outputDir: "glcheck-results/",
+    unitTestDir: "glcheck-tests/unit-tests/",
     serverPort: 7171,
-    tests: [],
+    unitTests: [],
     renderTests: [],
-    referenceImageDir: "glcheck-reference-images/",
-    renderTestThreshold: 0.95,
+    referenceImageDir: "glcheck-tests/reference-images/",
+    renderTestThreshold: 0.99,
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
@@ -93,8 +95,14 @@ for (let i = 0; i < argc; ++i) {
         case "--server-port":
             args.serverPort = parseInt(arg || argv[++i], 10);
             break;
-        case "--output-dir":
-            args.outputDir = arg || argv[++i];
+        case "--render-test-threshold":
+            args.renderTestThreshold = parseFloat(arg || argv[++i]);
+            break;
+        case "--unit-test-dir":
+            args.unitTestDir = arg || argv[++i];
+            break;
+        case "--reference-image-dir":
+            args.referenceImageDir = arg || argv[++i];
             break;
         case "--asset-dir":
             args.assetDir = arg || argv[++i];
@@ -114,13 +122,8 @@ for (let i = 0; i < argc; ++i) {
             process.exit(0);
             break;
         default: 
-            if (flag[0] === "-") {
-                console.log(`Unknown flag: ${flag}`);
-                process.exit(1);
-            } else {
-                args.tests = args.tests || [];
-                args.tests.push(flag);
-            }
+            console.log(`\u001b[31mgltest unknown argument: ${flag}\u001b[0m`);
+            process.exit(1);
     }
 }
 
@@ -128,10 +131,14 @@ const configPath = path.resolve(".", args.configPath || "glcheck.config.json");
 
 try {
     Object.assign(config, require(configPath));
-    config.tests = config.tests || [];
+    config.unitTests = config.unitTests || [];
+    config.renderTests = config.renderTests || [];
     config.coverageExcludeFiles = config.coverageExcludeFiles || [];
-    if (!Array.isArray(config.tests)) {
-        config.tests = [ config.tests ];
+    if (!Array.isArray(config.unitTests)) {
+        config.unitTests = [ config.unitTests ];
+    }
+    if (!Array.isArray(config.renderTests)) {
+        config.renderTests = [ config.renderTests ];
     }
     if (!Array.isArray(config.coverageExcludeFiles)) {
         config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
@@ -145,21 +152,18 @@ try {
 
 if (args.clearConfig) {
     config = { 
-        tests: [],
-        coverageExcludeFiles: []
+        unitTests: config.unitTests,
+        renderTests: config.renderTests,
+        coverageExcludeFiles: config.coverageExcludeFiles
     };
-}
-
-if (config.tests.length > 0 && args.tests) {
-    console.log("\u001b[33mWarning: Tests from config file overriden by command line argument.\u001b[0m\n");
 }
 
 Object.assign(config, args);
 
 
 const SELF_TEST = Boolean(args.selfTest);
-const OUTPUT_DIR = path.resolve(".", config.outputDir);
-const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
+const UNIT_TEST_DIR = path.resolve(".", config.unitTestDir);
+const ASSET_DIR = path.resolve(UNIT_TEST_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
@@ -186,7 +190,7 @@ const MIME_TYPES = {
     ".ogv": "video/ogg"
 };
 
-const coverageExcludeFiles = config.tests.concat(config.coverageExcludeFiles);
+const coverageExcludeFiles = config.unitTests.concat(config.coverageExcludeFiles);
 const EXCLUDE_REGEX = [];
 coverageExcludeFiles.forEach(ex => {
     glob(ex).map(p => {
@@ -258,7 +262,7 @@ const server = http.createServer(async (req, res) => {
         fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8")
     ]); 
     const testPaths = [];
-    config.tests.forEach(t => {
+    config.unitTests.forEach(t => {
         glob(t).forEach(p => {
             testPaths.push(`import "/${p}";`);
         });
@@ -269,11 +273,11 @@ const server = http.createServer(async (req, res) => {
         .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./glcheck.js\"></script>" : `<script>${glcheck}</script>`)
         .replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
 
-    rimraf(OUTPUT_DIR);
+    rimraf(UNIT_TEST_DIR);
     rimraf(COVERAGE_DIR);
-    await fs.mkdir(OUTPUT_DIR);
+    await fs.mkdir(UNIT_TEST_DIR, {recursive: true});
 
-    const writes = [ fs.writeFile(path.resolve(OUTPUT_DIR, "index.html"), index) ];
+    const writes = [ fs.writeFile(path.resolve(UNIT_TEST_DIR, "index.html"), index) ];
 
     if (config.assetDir) {
         writes.push(fs.mkdir(ASSET_DIR));
@@ -281,7 +285,7 @@ const server = http.createServer(async (req, res) => {
 
     if (SELF_TEST) {
         // Include glcheck.js as external script so it shows up in coverage reports
-        writes.push(fs.writeFile(path.resolve(OUTPUT_DIR, "glcheck.js"), glcheck));
+        writes.push(fs.writeFile(path.resolve(UNIT_TEST_DIR, "glcheck.js"), glcheck));
     }
 
     await Promise.all(writes);
@@ -324,7 +328,7 @@ const server = http.createServer(async (req, res) => {
         });
 
         return Promise.all([ testEndPromise, runEndPromise ])
-            .then(() => page.goto(`${BASE_URL}${config.outputDir}/index.html`));
+            .then(() => page.goto(`${BASE_URL}${config.unitTestDir}/index.html`));
     });
 
     await unitTestPromise;
@@ -350,12 +354,12 @@ const server = http.createServer(async (req, res) => {
     renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
         const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
         let promise = fs.stat(referencePath)
-            .then((stat) => {
+            .then(() => {
                 results.numAssertions++;
                 results.numTests++;
                 return page.goto(testURL)
-                    .then(() => Promise.all([page.screenshot(), fs.readFile(referencePath)]))
-                    .then(([actualData, expectedData]) => {
+                    .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
+                    .then(([ actualData, expectedData ]) => {
                         const actual = PNG.read(actualData);
                         const expected = PNG.read(expectedData);
                         const numPixels = actual.width * actual.height;
@@ -381,11 +385,11 @@ const server = http.createServer(async (req, res) => {
                         console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
                         console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
                     });
-            }).catch((error) => {
+            }).catch(() => {
                 console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
                 return page.goto(testURL)
                     .then(() => {
-                        return page.screenshot({ path:  referencePath});
+                        return page.screenshot({ path: referencePath });
                     });
             });
 

@@ -1,0 +1,11 @@
+{
+    "unitTestDir": "full-config-test/unit-tests/",
+    "referenceImageDir": "full-config-test/reference-images/",
+    "serverPort": 5151,
+    "unitTests": "test/test.js",
+    "renderTests": "test/render/index.html",
+    "assetDir": "test/assets/",
+    "coverage": true,
+    "coverageExcludeFiles": [],
+    "headless": true
+}
