@@ -1,9 +1,0 @@
-{
-    "outputDir": "full-config-results/",
-    "serverPort": 5151,
-    "tests": "test/test.js",
-    "assetDir": "test/assets/",
-    "coverage": true,
-    "coverageExcludeFiles": [],
-    "headless": true
-}

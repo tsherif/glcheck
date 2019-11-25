@@ -1,4 +1,7 @@
 {
     "tests": "test/test.js",
-    "assetDir": "test/assets/"
+    "assetDir": "test/assets/",
+    "renderTests": [
+        "test/render/index.html"
+    ]
 }

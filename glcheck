@@ -24,7 +24,6 @@
 
 "use strict";
 
-
 const puppeteer = require("puppeteer");
 const pti = require("puppeteer-to-istanbul");
 const http = require("http");
@@ -33,6 +32,8 @@ const path = require("path");
 const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
+const PNG = require('pngjs').PNG.sync;
+const pixelmatch = require('pixelmatch');
 
 //////////////////
 // CONFIGURATION
@@ -62,7 +63,8 @@ let config = {
     serverPort: 7171,
     tests: [],
     renderTests: [],
-    referenceImages: null,
+    referenceImageDir: "glcheck-reference-images/",
+    renderTestThreshold: 0.95,
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
@@ -155,12 +157,11 @@ if (config.tests.length > 0 && args.tests) {
 Object.assign(config, args);
 
 
-
 const SELF_TEST = Boolean(args.selfTest);
 const OUTPUT_DIR = path.resolve(".", config.outputDir);
 const ASSET_DIR = path.resolve(OUTPUT_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
-const CWD = process.cwd();
+const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
 
 
@@ -188,9 +189,8 @@ const MIME_TYPES = {
 const coverageExcludeFiles = config.tests.concat(config.coverageExcludeFiles);
 const EXCLUDE_REGEX = [];
 coverageExcludeFiles.forEach(ex => {
-    glob(ex).map(f => {
-        const excludePath = path.resolve(".", f).replace(CWD, "");
-        EXCLUDE_REGEX.push(new RegExp(`${excludePath}$`));
+    glob(ex).map(p => {
+        EXCLUDE_REGEX.push(new RegExp(`/${p}$`));
     }); 
 });
 
@@ -211,6 +211,43 @@ const server = http.createServer(async (req, res) => {
 
 (async () => {
 
+    /////////////////////
+    // LAUNCH PUPPETEER
+    /////////////////////
+
+    const browser = await puppeteer.launch({headless: config.headless});
+    const page = await browser.newPage();
+
+    // Report errors from the page
+    page.on("console", msg => {
+        if (msg.type() === "error") {
+            console.log(`\u001b[31m${msg.text()}\u001b[0m\n`);
+        }
+    });
+
+    page.on("pageerror", error => {
+        console.log(`\u001b[31m${error.message}\u001b[0m\n`);
+
+        server.close();
+        browser.close();
+
+        process.exit(1);
+    });
+
+    if (config.coverage) {
+        await page.coverage.startJSCoverage({
+            resetOnNavigation: false
+        });
+    }
+
+    // Report results per test
+    let results = {
+        passed: true,
+        numTests: 0,
+        numAssertions: 0,
+        numFailed: 0
+    };
+
     ///////////////////////////////
     // COPY FILES INTO OUTPUT DIR
     ///////////////////////////////
@@ -222,9 +259,8 @@ const server = http.createServer(async (req, res) => {
     ]); 
     const testPaths = [];
     config.tests.forEach(t => {
-        glob(t).map(f => {
-            const modulePath = path.resolve(".", f).replace(CWD, "");
-            testPaths.push(`import "${modulePath}";`);
+        glob(t).forEach(p => {
+            testPaths.push(`import "/${p}";`);
         });
     });
 
@@ -253,41 +289,6 @@ const server = http.createServer(async (req, res) => {
     if (config.assetDir) {
         copydir(path.resolve(".", config.assetDir), ASSET_DIR);
     }
-
-    /////////////////////
-    // LAUNCH PUPPETEER
-    /////////////////////
-
-    const browser = await puppeteer.launch({headless: config.headless});
-    const page = await browser.newPage();
-
-    // Report errors from the page
-    page.on("console", msg => {
-        if (msg.type() === "error") {
-            console.log(`\u001b[31m${msg.text()}\u001b[0m\n`);
-        }
-    });
-
-    page.on("pageerror", error => {
-        console.log(`\u001b[31m${error.message}\u001b[0m\n`);
-
-        server.close();
-        browser.close();
-
-        process.exit(1);
-    });
-
-    if (config.coverage) {
-        await page.coverage.startJSCoverage();
-    }
-
-    // Report results per test
-    let results = {
-        passed: true,
-        numTests: 0,
-        numAssertions: 0,
-        numFailed: 0
-    };
 
     const unitTestPromise = new Promise((resolve) => {
         const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
@@ -328,6 +329,71 @@ const server = http.createServer(async (req, res) => {
 
     await unitTestPromise;
 
+    /////////////////
+    // RENDER TESTS
+    /////////////////
+
+    await fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true});
+
+    const renderTestURLs = [];
+    config.renderTests.forEach((t) => {
+        glob(t).forEach(p => {
+            renderTestURLs.push({
+                testURL: `${BASE_URL}${p}`,
+                testPath: p,
+                referenceFileName: `${p.replace(/\//g, "-")}.png`
+            });
+        });
+    });
+
+    const renderTestsPromises = [];
+    renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
+        const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
+        let promise = fs.stat(referencePath)
+            .then((stat) => {
+                results.numAssertions++;
+                results.numTests++;
+                return page.goto(testURL)
+                    .then(() => Promise.all([page.screenshot(), fs.readFile(referencePath)]))
+                    .then(([actualData, expectedData]) => {
+                        const actual = PNG.read(actualData);
+                        const expected = PNG.read(expectedData);
+                        const numPixels = actual.width * actual.height;
+
+                        const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
+                        const match = 1.0 - diff / numPixels;
+
+                        const passed = match >= config.renderTestThreshold;
+
+                        if (passed) {
+                            console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
+                        } else {
+                            results.passed = false;
+                            results.numFailed++;
+                            console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
+                            console.log(`    Threshold:  \u001b[32m ${config.renderTestThreshold}\u001b[0m`);
+                            console.log(`    Match:      \u001b[31m ${match.toFixed(3)}\u001b[0m\n`);
+                            console.log("\n");
+                        }
+                    }).catch(e => {
+                        results.passed = false;
+                        results.numFailed++;
+                        console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
+                        console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
+                    });
+            }).catch((error) => {
+                console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
+                return page.goto(testURL)
+                    .then(() => {
+                        return page.screenshot({ path:  referencePath});
+                    });
+            });
+
+        renderTestsPromises.push(promise);
+    });
+
+    await Promise.all(renderTestsPromises);
+
     if (config.coverage) {
         const jsCoverage = await page.coverage.stopJSCoverage();
         pti.write(jsCoverage.filter(item => {
@@ -357,7 +423,7 @@ const server = http.createServer(async (req, res) => {
     if (results.passed) {
         console.log("\u001b[32mAll tests passed!\u001b[0m\n");
     } else {
-        console.log(`\t\u001b[31m${results.failed} tests failed.\u001b[0m\n\n`);
+        console.log(`\t\u001b[31m${results.numFailed} tests failed.\u001b[0m\n\n`);
     }
 
     await Promise.all([
