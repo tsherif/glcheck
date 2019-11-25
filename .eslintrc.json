@@ -30,7 +30,8 @@
         "comma-style": "error",
         "func-call-spacing": "error",
         "indent": ["error", 4, {
-            "SwitchCase": 1
+            "SwitchCase": 1,
+            "MemberExpression": 0
         }],
         "key-spacing": "error",
         "new-cap": "error",

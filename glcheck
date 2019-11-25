@@ -198,29 +198,47 @@ coverageExcludeFiles.forEach(ex => {
     }); 
 });
 
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
     const url = req.url; 
     const requestPath = decodeURI(url.replace(/^\/+/, "").replace(/\?.*$/, ""));
     const filePath = path.resolve(".", requestPath);
     const mimeType = MIME_TYPES[path.extname(filePath)] || "application/octet-stream";
 
-    const content = await fs.readFile(filePath);
-    res.setHeader("Content-Type", mimeType);
-    res.end(content);
+    fs.readFile(filePath).then(content => {
+        res.setHeader("Content-Type", mimeType);
+        res.end(content);
+    });
 }).listen(config.serverPort);
 
 //////////////
 // RUN TESTS
 //////////////
 
-(async () => {
+// Report results per test
+let results = {
+    passed: true,
+    numTests: 0,
+    numAssertions: 0,
+    numFailed: 0
+};
 
-    /////////////////////
-    // LAUNCH PUPPETEER
-    /////////////////////
+let browser, page;
 
-    const browser = await puppeteer.launch({headless: config.headless});
-    const page = await browser.newPage();
+/////////////////////
+// LAUNCH PUPPETEER
+/////////////////////
+
+puppeteer.launch({headless: config.headless})
+.then(b => {
+    browser = b;
+    return browser.newPage();
+})
+.then(p => {
+    page = p;
+
+    /////////////////////////////////////
+    // PAGE ERROR HANDLERS AND COVERAGE
+    /////////////////////////////////////
 
     // Report errors from the page
     page.on("console", msg => {
@@ -238,189 +256,214 @@ const server = http.createServer(async (req, res) => {
         process.exit(1);
     });
 
+
     if (config.coverage) {
-        await page.coverage.startJSCoverage({
+        rimraf(COVERAGE_DIR);
+        return page.coverage.startJSCoverage({
             resetOnNavigation: false
         });
+    } else {
+        return null;
+    }
+}).then(() => {
+    
+    if (config.unitTests.length === 0) {
+        return null;
     }
 
-    // Report results per test
-    let results = {
-        passed: true,
-        numTests: 0,
-        numAssertions: 0,
-        numFailed: 0
-    };
-
     ///////////////////////////////
-    // COPY FILES INTO OUTPUT DIR
+    // SET UP UNIT TEST DIRECTORY
     ///////////////////////////////
 
-    const [ template, qunit, glcheck ] = await Promise.all([
+    rimraf(UNIT_TEST_DIR);
+
+    return Promise.all([
         fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
         fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
-        fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8")
-    ]); 
-    const testPaths = [];
-    config.unitTests.forEach(t => {
-        glob(t).forEach(p => {
-            testPaths.push(`import "/${p}";`);
+        fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8"),
+        fs.mkdir(UNIT_TEST_DIR, {recursive: true})
+    ]).then(([ template, qunit, glcheck ]) => {
+        const testPaths = [];
+        config.unitTests.forEach(t => {
+            glob(t).forEach(p => {
+                testPaths.push(`import "/${p}";`);
+            });
         });
-    });
 
-    let index = template
+        let index = template
         .replace("QUNIT_IMPORT", qunit)
         .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./glcheck.js\"></script>" : `<script>${glcheck}</script>`)
         .replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
 
-    rimraf(UNIT_TEST_DIR);
-    rimraf(COVERAGE_DIR);
-    await fs.mkdir(UNIT_TEST_DIR, {recursive: true});
+        const writes = [ fs.writeFile(path.resolve(UNIT_TEST_DIR, "index.html"), index) ];
 
-    const writes = [ fs.writeFile(path.resolve(UNIT_TEST_DIR, "index.html"), index) ];
+        if (config.assetDir) {
+            writes.push(fs.mkdir(ASSET_DIR).then(() => copydir(path.resolve(".", config.assetDir), ASSET_DIR)));
+        }
 
-    if (config.assetDir) {
-        writes.push(fs.mkdir(ASSET_DIR));
-    }
+        if (SELF_TEST) {
+            // Include glcheck.js as external script so it shows up in coverage reports
+            writes.push(fs.writeFile(path.resolve(UNIT_TEST_DIR, "glcheck.js"), glcheck));
+        }
 
-    if (SELF_TEST) {
-        // Include glcheck.js as external script so it shows up in coverage reports
-        writes.push(fs.writeFile(path.resolve(UNIT_TEST_DIR, "glcheck.js"), glcheck));
-    }
+        return Promise.all(writes).then(() => new Promise((resolve) => {
+            ///////////////////
+            // RUN UNIT TESTS
+            ///////////////////
 
-    await Promise.all(writes);
-
-    if (config.assetDir) {
-        copydir(path.resolve(".", config.assetDir), ASSET_DIR);
-    }
-
-    const unitTestPromise = new Promise((resolve) => {
-        const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
-            const assertions = test.assertions;
-            const count = assertions.length;
-            if (count === 0) {
-                return;
-            }
-            results.numTests++;
-            results.numAssertions += count;
-            if (test.status === "passed") {
-                console.log(`\u001b[32m\u2714\u001b[0m ${test.name}`);
-            } else {
-                for (let j = 0; j < count; ++j) {
-                    const assertion = assertions[j];
-                    if (!assertion.passed) {
-                        console.log(`\n\u001b[31m\u274c\u001b[0m ${test.name}: ${assertion.message}`);
-                        console.log(`    ${assertion.negative ? "Did not expect:" : "Expected: "}\u001b[32m ${JSON.stringify(assertion.expected)}\u001b[0m`);
-                        console.log(`    Got:${" ".repeat(assertion.negative ? 11 : 6)}\u001b[31m ${JSON.stringify(assertion.actual)}\u001b[0m\n`);
-                        console.log(assertion.stack);
-                        console.log("\n");
+            const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
+                const assertions = test.assertions;
+                const count = assertions.length;
+                if (count === 0) {
+                    return;
+                }
+                results.numTests++;
+                results.numAssertions += count;
+                if (test.status === "passed") {
+                    console.log(`\u001b[32m\u2714\u001b[0m ${test.name}`);
+                } else {
+                    for (let j = 0; j < count; ++j) {
+                        const assertion = assertions[j];
+                        if (!assertion.passed) {
+                            console.log(`\n\u001b[31m\u274c\u001b[0m ${test.name}: ${assertion.message}`);
+                            console.log(`    ${assertion.negative ? "Did not expect:" : "Expected: "}\u001b[32m ${JSON.stringify(assertion.expected)}\u001b[0m`);
+                            console.log(`    Got:${" ".repeat(assertion.negative ? 11 : 6)}\u001b[31m ${JSON.stringify(assertion.actual)}\u001b[0m\n`);
+                            console.log(assertion.stack);
+                            console.log("\n");
+                        }
                     }
                 }
-            }
-        });
+            });
 
-        // Report final results
-        const runEndPromise = page.exposeFunction("glcheck_runEnd", (run) => {
-            results.passed = run.status === "passed";
-            results.numFailed = run.testCounts.failed;
+            // Report final results
+            const runEndPromise = page.exposeFunction("glcheck_runEnd", (run) => {
+                results.passed = run.status === "passed";
+                results.numFailed = run.testCounts.failed;
 
-            resolve();
-        });
+                resolve();
+            });
 
-        return Promise.all([ testEndPromise, runEndPromise ])
+            return Promise.all([ testEndPromise, runEndPromise ])
             .then(() => page.goto(`${BASE_URL}${config.unitTestDir}/index.html`));
+        }));
     });
 
-    await unitTestPromise;
-
+}).then(() => {
     /////////////////
     // RENDER TESTS
     /////////////////
 
-    await fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true});
+    if (config.renderTests.length === 0) {
+        return null;
+    }
 
-    const renderTestURLs = [];
-    config.renderTests.forEach((t) => {
-        glob(t).forEach(p => {
-            renderTestURLs.push({
-                testURL: `${BASE_URL}${p}`,
-                testPath: p,
-                referenceFileName: `${p.replace(/\//g, "-")}.png`
+    /////////////////////////////////
+    // SET UP RENDER TEST DIRECTORY
+    /////////////////////////////////
+
+    return fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true})
+    .then(() => {
+        const renderTestURLs = [];
+        config.renderTests.forEach((t) => {
+            glob(t).forEach(p => {
+                renderTestURLs.push({
+                    testURL: `${BASE_URL}${p}`,
+                    testPath: p,
+                    referenceFileName: `${p.replace(/\//g, "-")}.png`
+                });
             });
         });
-    });
 
-    const renderTestsPromises = [];
-    renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
-        const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
-        let promise = fs.stat(referencePath)
+        /////////////////////
+        // RUN RENDER TESTS
+        /////////////////////
+
+        const renderTestsPromises = [];
+        renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
+            const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
+            let promise = fs.stat(referencePath)
             .then(() => {
                 results.numAssertions++;
                 results.numTests++;
+
                 return page.goto(testURL)
-                    .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
-                    .then(([ actualData, expectedData ]) => {
-                        const actual = PNG.read(actualData);
-                        const expected = PNG.read(expectedData);
-                        const numPixels = actual.width * actual.height;
+                .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
+                .then(([ actualData, expectedData ]) => {
+                    const actual = PNG.read(actualData);
+                    const expected = PNG.read(expectedData);
+                    const numPixels = actual.width * actual.height;
 
-                        const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
-                        const match = 1.0 - diff / numPixels;
+                    const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
+                    const match = 1.0 - diff / numPixels;
 
-                        const passed = match >= config.renderTestThreshold;
+                    const passed = match >= config.renderTestThreshold;
 
-                        if (passed) {
-                            console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
-                        } else {
-                            results.passed = false;
-                            results.numFailed++;
-                            console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
-                            console.log(`    Threshold:  \u001b[32m ${config.renderTestThreshold}\u001b[0m`);
-                            console.log(`    Match:      \u001b[31m ${match.toFixed(3)}\u001b[0m\n`);
-                            console.log("\n");
-                        }
-                    }).catch(e => {
+                    if (passed) {
+                        console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
+                    } else {
                         results.passed = false;
                         results.numFailed++;
                         console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
-                        console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
-                    });
+                        console.log(`    Threshold:  \u001b[32m ${config.renderTestThreshold}\u001b[0m`);
+                        console.log(`    Match:      \u001b[31m ${match.toFixed(3)}\u001b[0m\n`);
+                        console.log("\n");
+                    }
+                }).catch(e => {
+                    results.passed = false;
+                    results.numFailed++;
+                    console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
+                    console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
+                });
             }).catch(() => {
                 console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
+                
                 return page.goto(testURL)
-                    .then(() => {
-                        return page.screenshot({ path: referencePath });
-                    });
+                .then(() => {
+                    return page.screenshot({ path: referencePath });
+                });
             });
 
-        renderTestsPromises.push(promise);
-    });
+            renderTestsPromises.push(promise);
+        });
 
-    await Promise.all(renderTestsPromises);
+        return Promise.all(renderTestsPromises);
+    });
+}).then(() => {
+
+    ////////////////////
+    // COVERAGE REPORT
+    ////////////////////
 
     if (config.coverage) {
-        const jsCoverage = await page.coverage.stopJSCoverage();
-        pti.write(jsCoverage.filter(item => {
-            const url = item.url;
+        return page.coverage.stopJSCoverage().then((jsCoverage) => {
+            pti.write(jsCoverage.filter(item => {
+                const url = item.url;
 
-            // Filter out scripts embedded in index.html
-            // (i.e. test runner scripts)
-            if (url.match(/\/index\.html$/)) {
-                return false;
-            }
-
-            // Filter out test files and files
-            // excluded by config
-            let include = true;
-            EXCLUDE_REGEX.forEach(ex => {
-                if (url.match(ex)) {
-                    include = false;
+                // Filter out scripts embedded in index.html
+                // (i.e. test runner scripts)
+                if (url.match(/\/index\.html$/)) {
+                    return false;
                 }
-            });
 
-            return include; 
-        }));
-    }
+                // Filter out test files and files
+                // excluded by config
+                let include = true;
+                EXCLUDE_REGEX.forEach(ex => {
+                    if (url.match(ex)) {
+                        include = false;
+                    }
+                });
+
+                return include; 
+            }));
+        });
+    } else {
+        return null;
+    } 
+}).then(() => {
+    ////////////////////
+    // FINAL REPORT
+    ////////////////////
 
     console.log(`\nRan ${results.numTests} tests (${results.numAssertions} assertions)...\n`);
 
@@ -430,12 +473,8 @@ const server = http.createServer(async (req, res) => {
         console.log(`\t\u001b[31m${results.numFailed} tests failed.\u001b[0m\n\n`);
     }
 
-    await Promise.all([
+    Promise.all([
         server.close(),
         browser.close()
-    ]);
-    
-    process.exit(results.passed ? 0 : 1);
-
-})();
-
+    ]).then(() => process.exit(results.passed ? 0 : 1));
+});
