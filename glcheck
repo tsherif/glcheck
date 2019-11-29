@@ -210,31 +210,27 @@ const server = http.createServer((req, res) => {
     });
 }).listen(config.serverPort);
 
-//////////////
-// RUN TESTS
-//////////////
+(async () => {
 
-// Report results per test
-let results = {
-    passed: true,
-    numTests: 0,
-    numAssertions: 0,
-    numFailed: 0
-};
+    //////////////
+    // RUN TESTS
+    //////////////
 
-let browser, page;
+    // Report results per test
+    let results = {
+        passed: true,
+        numTests: 0,
+        numAssertions: 0,
+        numFailed: 0
+    };
 
-/////////////////////
-// LAUNCH PUPPETEER
-/////////////////////
+    /////////////////////
+    // LAUNCH PUPPETEER
+    /////////////////////
 
-puppeteer.launch({headless: config.headless})
-.then(b => {
-    browser = b;
-    return browser.newPage();
-})
-.then(p => {
-    page = p;
+
+    const browser = await puppeteer.launch({headless: config.headless});
+    const page = await browser.newPage();
 
     /////////////////////////////////////
     // PAGE ERROR HANDLERS AND COVERAGE
@@ -259,30 +255,25 @@ puppeteer.launch({headless: config.headless})
 
     if (config.coverage) {
         rimraf(COVERAGE_DIR);
-        return page.coverage.startJSCoverage({
+        await page.coverage.startJSCoverage({
             resetOnNavigation: false
         });
-    } else {
-        return null;
-    }
-}).then(() => {
-    
-    if (config.unitTests.length === 0) {
-        return null;
     }
 
-    ///////////////////////////////
-    // SET UP UNIT TEST DIRECTORY
-    ///////////////////////////////
+    if (config.unitTests.length > 0) {
+        ///////////////////////////////
+        // SET UP UNIT TEST DIRECTORY
+        ///////////////////////////////
 
-    rimraf(UNIT_TEST_DIR);
+        rimraf(UNIT_TEST_DIR);
 
-    return Promise.all([
-        fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
-        fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
-        fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8"),
-        fs.mkdir(UNIT_TEST_DIR, {recursive: true})
-    ]).then(([ template, qunit, glcheck ]) => {
+        const [ template, qunit, glcheck ] = await Promise.all([
+            fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
+            fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
+            fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8"),
+            fs.mkdir(UNIT_TEST_DIR, {recursive: true})
+        ]);
+
         const testPaths = [];
         config.unitTests.forEach(t => {
             glob(t).forEach(p => {
@@ -306,7 +297,9 @@ puppeteer.launch({headless: config.headless})
             writes.push(fs.writeFile(path.resolve(UNIT_TEST_DIR, "glcheck.js"), glcheck));
         }
 
-        return Promise.all(writes).then(() => new Promise((resolve) => {
+        await Promise.all(writes);
+
+        await new Promise((resolve) => {
             ///////////////////
             // RUN UNIT TESTS
             ///////////////////
@@ -345,24 +338,22 @@ puppeteer.launch({headless: config.headless})
 
             return Promise.all([ testEndPromise, runEndPromise ])
             .then(() => page.goto(`${BASE_URL}${config.unitTestDir}/index.html`));
-        }));
-    });
-
-}).then(() => {
-    /////////////////
-    // RENDER TESTS
-    /////////////////
-
-    if (config.renderTests.length === 0) {
-        return null;
+        });
     }
 
-    /////////////////////////////////
-    // SET UP RENDER TEST DIRECTORY
-    /////////////////////////////////
+    if (config.renderTests.length > 0) {
+        /////////////////
+        // RENDER TESTS
+        /////////////////
 
-    return fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true})
-    .then(() => {
+        
+
+        /////////////////////////////////
+        // SET UP RENDER TEST DIRECTORY
+        /////////////////////////////////
+
+        await fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true});
+        
         const renderTestURLs = [];
         config.renderTests.forEach((t) => {
             glob(t).forEach(p => {
@@ -426,16 +417,16 @@ puppeteer.launch({headless: config.headless})
             });
         });
 
-        return renderTestPromises;
-    });
-}).then(() => {
-
-    ////////////////////
-    // COVERAGE REPORT
-    ////////////////////
+        await renderTestPromises;
+    }
 
     if (config.coverage) {
-        return page.coverage.stopJSCoverage().then((jsCoverage) => {
+
+        ////////////////////
+        // COVERAGE REPORT
+        ////////////////////
+
+        await page.coverage.stopJSCoverage().then((jsCoverage) => {
             pti.write(jsCoverage.filter(item => {
                 const url = item.url;
 
@@ -457,10 +448,8 @@ puppeteer.launch({headless: config.headless})
                 return include; 
             }));
         });
-    } else {
-        return null;
-    } 
-}).then(() => {
+    }
+
     ////////////////////
     // FINAL REPORT
     ////////////////////
@@ -473,8 +462,11 @@ puppeteer.launch({headless: config.headless})
         console.log(`\t\u001b[31m${results.numFailed} tests failed.\u001b[0m\n\n`);
     }
 
-    Promise.all([
+    await Promise.all([
         server.close(),
         browser.close()
-    ]).then(() => process.exit(results.passed ? 0 : 1));
-});
+    ]);
+
+    process.exit(results.passed ? 0 : 1);
+})();
+

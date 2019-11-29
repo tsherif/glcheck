@@ -3,7 +3,7 @@
     "referenceImageDir": "full-config-test/reference-images/",
     "serverPort": 5151,
     "unitTests": "test/test.js",
-    "renderTests": "test/render/index.html",
+    "renderTests": "test/render/*.html",
     "assetDir": "test/assets/",
     "coverage": true,
     "coverageExcludeFiles": [],
