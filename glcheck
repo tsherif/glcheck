@@ -378,55 +378,55 @@ puppeteer.launch({headless: config.headless})
         // RUN RENDER TESTS
         /////////////////////
 
-        const renderTestsPromises = [];
+        let renderTestPromises = Promise.resolve();
         renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
             const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
-            let promise = fs.stat(referencePath)
-            .then(() => {
-                results.numAssertions++;
-                results.numTests++;
+            renderTestPromises = renderTestPromises.then(() => {
+                return fs.stat(referencePath)
+                .then(() => {
+                    results.numAssertions++;
+                    results.numTests++;
 
-                return page.goto(testURL)
-                .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
-                .then(([ actualData, expectedData ]) => {
-                    const actual = PNG.read(actualData);
-                    const expected = PNG.read(expectedData);
-                    const numPixels = actual.width * actual.height;
+                    return page.goto(testURL)
+                    .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
+                    .then(([ actualData, expectedData ]) => {
+                        const actual = PNG.read(actualData);
+                        const expected = PNG.read(expectedData);
+                        const numPixels = actual.width * actual.height;
 
-                    const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
-                    const match = 1.0 - diff / numPixels;
+                        const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
+                        const match = 1.0 - diff / numPixels;
 
-                    const passed = match >= config.renderTestThreshold;
+                        const passed = match >= config.renderTestThreshold;
 
-                    if (passed) {
-                        console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
-                    } else {
+                        if (passed) {
+                            console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
+                        } else {
+                            results.passed = false;
+                            results.numFailed++;
+                            console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
+                            console.log(`    Threshold:  \u001b[32m ${config.renderTestThreshold}\u001b[0m`);
+                            console.log(`    Match:      \u001b[31m ${match.toFixed(3)}\u001b[0m\n`);
+                            console.log("\n");
+                        }
+                    }).catch(e => {
                         results.passed = false;
                         results.numFailed++;
                         console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
-                        console.log(`    Threshold:  \u001b[32m ${config.renderTestThreshold}\u001b[0m`);
-                        console.log(`    Match:      \u001b[31m ${match.toFixed(3)}\u001b[0m\n`);
-                        console.log("\n");
-                    }
-                }).catch(e => {
-                    results.passed = false;
-                    results.numFailed++;
-                    console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
-                    console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
-                });
-            }).catch(() => {
-                console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
-                
-                return page.goto(testURL)
-                .then(() => {
-                    return page.screenshot({ path: referencePath });
-                });
+                        console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
+                    });
+                }).catch(() => {
+                    console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
+                    
+                    return page.goto(testURL)
+                    .then(() => {
+                        return page.screenshot({ path: referencePath });
+                    });
+                }); 
             });
-
-            renderTestsPromises.push(promise);
         });
 
-        return Promise.all(renderTestsPromises);
+        return renderTestPromises;
     });
 }).then(() => {
 

@@ -1,6 +1,6 @@
 {
     "unitTests": "test/test.js",
     "assetDir": "test/assets/",
-    "renderTests": "test/render/index.html",
+    "renderTests": "test/render/*.html",
     "referenceImageDir": "test/render/reference-images"
 }
