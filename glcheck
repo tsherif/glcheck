@@ -379,6 +379,7 @@ const server = http.createServer((req, res) => {
                     results.numTests++;
 
                     return page.goto(testURL)
+                    .then(() => page.waitForFunction("window.glcheck_renderDone"))
                     .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
                     .then(([ actualData, expectedData ]) => {
                         const actual = PNG.read(actualData);
