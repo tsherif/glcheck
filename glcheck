@@ -379,7 +379,10 @@ const server = http.createServer((req, res) => {
                     results.numTests++;
 
                     return page.goto(testURL)
-                    .then(() => page.waitForFunction("window.glcheck_renderDone"))
+                    .then(() => new Promise((resolve, reject) => {
+                        page.waitForFunction("window.glcheck_renderDone").then(resolve);
+                        setTimeout(() => reject(new Error("Timeout (did you forget to set 'glcheck_renderDone' in the page?)")), 1000);
+                    }))
                     .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
                     .then(([ actualData, expectedData ]) => {
                         const actual = PNG.read(actualData);
@@ -405,7 +408,7 @@ const server = http.createServer((req, res) => {
                         results.passed = false;
                         results.numFailed++;
                         console.log(`\n\u001b[31m\u274c\u001b[0m Render: ${testPath}`);
-                        console.log(`\n\u001b[31m${e.stack}\u001b[0m`);
+                        console.log(`\n\u001b[31m${e.stack}\u001b[0m\n`);
                     });
                 }).catch(() => {
                     console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
