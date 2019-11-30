@@ -3,7 +3,7 @@ glcheck
 
 [![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://img.shields.io/coveralls/github/tsherif/glcheck)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
 
-**glcheck** is a WebGL-focused testing framework. It runs unit tests and render test using puppeteer which allows it to run automated tests and generate coverage reports for both WebGL 1 and 2 applications.
+**glcheck** is a WebGL-focused testing framework. It runs unit tests and render tests using puppeteer which allows it to run automated tests and generate coverage reports for both WebGL 1 and 2 applications.
 
 # Usage
 
@@ -13,7 +13,7 @@ To install, simply run:
 npm i -D glcheck
 ```
 
-And run using:
+Run using:
 
 ```bash
 npx glcheck
@@ -21,16 +21,16 @@ npx glcheck
 
 By default, `glcheck` will read configuration from `glcheck.config.json` in the current directory, from which it will read the following options:
 
-- **unitTests** (default: `[]`): List of JavaScript file to run as unit tests.
-- **unitTestDir** (default: `"glcheck-tests/unit-tests/"`): Directory to output unit results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
+- **unitTests** (default: `[]`): List of JavaScript files to run as unit tests.
+- **unitTestDir** (default: `"glcheck-tests/unit-tests/"`): Directory to output unit test results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
+- **assetDir** (default: `null`): Directory to load assets from. Contents from this directory will be available to unit tests in the subdirectory `assets/`.
 - **renderTests** (default: `[]`): List of HTML files to run as render tests.
-- **referenceImageDir** (default: `"glcheck-tests/reference-images/"`): Path to render test reference images.
+- **referenceImageDir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
 - **renderTestThreshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
-- **serverPort** (default: `7171`): Port to run the local server on for puppeteer testing.
+- **serverPort** (default: `7171`): Port to run the local server on for puppeteer.
 - **headless** (default: `true`): Whether to run headless.
-- **assetDir** (default: `null`): Directory to load assets from. Contents from this directory will be available to tests in the subdirectory `assets/`.
 - **coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **tests** are always excluded from coverage reports.
+- **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
 - **runUnitTests** (default: `true`): Whether to run unit tests.
 - **runRenderTests** (default: `true`): Whether to run render tests.
 
@@ -44,13 +44,13 @@ Command line arguments will always override options from the config file:
 - **--help**: Show a help message and exit.
 - **--version**: Show version number and exit.
 - **--config** (default: `"glcheck.config.json"`): Path to config file.
-- **--unit-test-dir** (default: `"glcheck-results/"`): Directory to output unit results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser.
-- **--reference-image-dir** (default: `"glcheck-tests/reference-images/"`): Path to render test reference images.
+- **--unit-test-dir** (default: `"glcheck-results/"`): Directory to output unit test results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser.
+- **--asset-dir** (default: `null`): Directory to load assets from. Contents from this directory will be available to unit tests in the subdirectory `assets/`.
+- **--reference-image-dir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
 - **--render-test-threshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
-- **--server-port** (default: `7171`): Port to run the local server on for puppeteer testing.
+- **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
 - **--headless** (default: `true`): Whether to run headless.
 - **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **--asset-dir** (default: `null`): Directory to load assets from. Contents from this directory will be available to tests in the subdirectory `assets/`.
 - **--run--unit-tests** (default: `true`): Whether to run unit tests.
 - **--run--render-tests** (default: `true`): Whether to run render tests.
 
@@ -85,7 +85,7 @@ glCheck("Test myApp", (t, canvas) => {
 
 ```
 
-Tests are defined for `glcheck` using the `glCheck` function. The general structure is as follows:
+Unit tests are defined for `glcheck` using the `glCheck` function. The general structure is as follows:
 
 ```js
 
