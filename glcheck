@@ -58,6 +58,7 @@ Optional arguments:
   --render-test-threshold VAL      Match threshold between 0 and 1 for render tests [default: 0.99].
   --unit-test-dir PATH             Path to output unit test results to [default: glcheck-tests/unit-tests/].
   --reference-image-dir PATH       Path to render test reference images [default: glcheck-tests/reference-images/].
+  --render-timeout TIME            Timeout for each render test in milliseconds [default: 5000].
   --asset-dir PATH                 Path to copy assets from.
   --run-unit-tests {true/false}    Run unit tests [default: true].
   --run-render-tests {true/false}  Run render tests [default: true].
@@ -70,6 +71,7 @@ let config = {
     renderTests: [],
     referenceImageDir: "glcheck-tests/reference-images/",
     renderTestThreshold: 0.99,
+    renderTimeout: 5000,
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
@@ -97,6 +99,24 @@ for (let i = 0; i < argc; ++i) {
             arg = arg || argv[++i];
             args.headless = arg.toLowerCase() !== "false";
             break;
+        case "--server-port":
+            args.serverPort = parseInt(arg || argv[++i], 10);
+            break;
+        case "--unit-test-dir":
+            args.unitTestDir = arg || argv[++i];
+            break;
+        case "--asset-dir":
+            args.assetDir = arg || argv[++i];
+            break;
+        case "--reference-image-dir":
+            args.referenceImageDir = arg || argv[++i];
+            break;
+        case "--render-test-threshold":
+            args.renderTestThreshold = parseFloat(arg || argv[++i]);
+            break;
+        case "--render-timeout":
+            args.renderTimeout = parseInt(arg || argv[++i], 10);
+            break;
         case "--run-unit-tests":
             arg = arg || argv[++i];
             args.runUnitTests = arg.toLowerCase() !== "false";
@@ -104,21 +124,6 @@ for (let i = 0; i < argc; ++i) {
         case "--run-render-tests":
             arg = arg || argv[++i];
             args.runRenderTests = arg.toLowerCase() !== "false";
-            break;
-        case "--server-port":
-            args.serverPort = parseInt(arg || argv[++i], 10);
-            break;
-        case "--render-test-threshold":
-            args.renderTestThreshold = parseFloat(arg || argv[++i]);
-            break;
-        case "--unit-test-dir":
-            args.unitTestDir = arg || argv[++i];
-            break;
-        case "--reference-image-dir":
-            args.referenceImageDir = arg || argv[++i];
-            break;
-        case "--asset-dir":
-            args.assetDir = arg || argv[++i];
             break;
         case "--self-test":
             args.selfTest = true;
@@ -180,7 +185,6 @@ const ASSET_DIR = path.resolve(UNIT_TEST_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
-const RENDER_TIMEOUT = 5000;
 const RENDER_POLLING = 10;
 
 
@@ -421,7 +425,7 @@ const server = http.createServer((req, res) => {
                     results.numTests++;
 
                     return page.goto(testURL)
-                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: RENDER_TIMEOUT}))
+                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: config.renderTimeout}))
                     .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
                     .then(([ actualData, expectedData ]) => {
                         const actual = PNG.read(actualData);
@@ -457,7 +461,7 @@ const server = http.createServer((req, res) => {
                     console.log(`\n\u001b[33mCapturing reference image: ${testPath}\u001b[0m`);
                     
                     return page.goto(testURL)
-                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: RENDER_TIMEOUT}))
+                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: config.renderTimeout}))
                     .then(() => page.screenshot({ path: referencePath }))
                     .catch((e) => {
                         console.log(`\n\u001b[31mError while capturing reference image: ${testPath}\u001b[0m`);
