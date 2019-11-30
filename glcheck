@@ -181,7 +181,7 @@ const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
 const RENDER_TIMEOUT = 5000;
-const RENDER_POLLING = 50;
+const RENDER_POLLING = 10;
 
 
 /////////////////
