@@ -42,22 +42,25 @@ const pixelmatch = require("pixelmatch");
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
-              [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
-              [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH]
+               [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
+               [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH]
+               [--run-unit-tests {true/false}] [--run-render-tests {true/false}] 
 
 Test WebGL 1 and 2 applications.
 
 Optional arguments:
-  --help                        Show this help message and exit.
-  --version                     Show program's version number and exit.
-  --config PATH                 Path to config file (default: ./glcheck.config.json)
-  --coverage {true/false}       Generate coverage results that can be consumed by Istanbul [default: false].
-  --headless {true/false}       Run headless [default: true].
-  --server-port PORT            Port to run testing server on [default: 7171].
-  --render-test-threshold VAL   Match threshold between 0 and 1 for render tests [default: 0.99].
+  --help                           Show this help message and exit.
+  --version                        Show program's version number and exit.
+  --config PATH                    Path to config file (default: ./glcheck.config.json)
+  --coverage {true/false}          Generate coverage results that can be consumed by Istanbul [default: false].
+  --headless {true/false}          Run headless [default: true].
+  --server-port PORT               Port to run testing server on [default: 7171].
+  --render-test-threshold VAL      Match threshold between 0 and 1 for render tests [default: 0.99].
   --unit-test-dir PATH             Path to output results to [default: glcheck-tests/unit-tests/].
-  --reference-image-dir PATH    Path to output results to [default: glcheck-tests/reference-images/].
-  --asset-dir PATH              Path to copy assets from.
+  --reference-image-dir PATH       Path to output results to [default: glcheck-tests/reference-images/].
+  --asset-dir PATH                 Path to copy assets from.
+  --run-unit-tests {true/false}    Run unit tests [default: true].
+  --run-render-tests {true/false}  Run render tests [default: true].
 `;
 
 let config = {
@@ -70,7 +73,9 @@ let config = {
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
-    headless: true
+    headless: true,
+    runUnitTests: true,
+    runRenderTests: true
 };
 
 const argv = process.argv.slice(2);
@@ -91,6 +96,14 @@ for (let i = 0; i < argc; ++i) {
         case "--headless":
             arg = arg || argv[++i];
             args.headless = arg.toLowerCase() !== "false";
+            break;
+        case "--run-unit-tests":
+            arg = arg || argv[++i];
+            args.runUnitTests = arg.toLowerCase() !== "false";
+            break;
+        case "--run-render-tests":
+            arg = arg || argv[++i];
+            args.runRenderTests = arg.toLowerCase() !== "false";
             break;
         case "--server-port":
             args.serverPort = parseInt(arg || argv[++i], 10);
@@ -262,7 +275,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.unitTests.length > 0) {
+    if (config.runUnitTests && config.unitTests.length > 0) {
         ///////////////////////////////
         // SET UP UNIT TEST DIRECTORY
         ///////////////////////////////
@@ -343,7 +356,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.renderTests.length > 0) {
+    if (config.runRenderTests && config.renderTests.length > 0) {
         /////////////////
         // RENDER TESTS
         /////////////////
@@ -373,22 +386,26 @@ const server = http.createServer((req, res) => {
 
 
         const instrumentAnimationFrame = `
-            window.glcheck_instrumentAnimationFrame = function(numFrames) {
-                if (window.GLCHECK_RAF_INSTRUMENTED) {
-                    return;
+            window.glcheck_setRAFCount = function(numFrames) {
+                if (!Number.isFinite(numFrames)) {
+                    throw new Error("glcheck_animationFrameCount: Argument is not a number.");
                 }
 
-                let currentFrame = 0;
-                const raf = window.requestAnimationFrame;
-                window.requestAnimationFrame = (fn) => {
-                    if (currentFrame++ < numFrames) {
-                        return raf(fn);
-                    } else {
-                        window.glcheck_renderDone = true;
-                    }
-                };
+                window.GLCHECK_RAF_COUNT = numFrames;
 
-                window.GLCHECK_RAF_INSTRUMENTED = true;
+                if (!window.GLCHECK_RAF_INSTRUMENTED) {
+                    let currentFrame = 0;
+                    const raf = window.requestAnimationFrame;
+                    window.requestAnimationFrame = (fn) => {
+                        if (currentFrame++ < window.GLCHECK_RAF_COUNT) {
+                            return raf(fn);
+                        } else {
+                            window.glcheck_renderDone = true;
+                        }
+                    };
+
+                    window.GLCHECK_RAF_INSTRUMENTED = true;
+                }
             };
         `;
         
@@ -504,7 +521,6 @@ const server = http.createServer((req, res) => {
             for (const url in consolidatedEntries) {
                 consolidatedCoverage.push(consolidatedEntries[url]);
             }
-            console.log(consolidatedCoverage.map(i => i.url).sort().join("\n"));
 
             pti.write(consolidatedCoverage);
         });

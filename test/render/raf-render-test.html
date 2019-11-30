@@ -12,8 +12,8 @@
 <body>
     <canvas id="webgl-canvas"></canvas>
     <script>
-        if (window.glcheck_instrumentAnimationFrame) {
-            window.glcheck_instrumentAnimationFrame(10);
+        if (window.glcheck_setRAFCount) {
+            window.glcheck_setRAFCount(10);
         }
 
         var canvas = document.getElementById("webgl-canvas");
@@ -100,7 +100,7 @@
 
         requestAnimationFrame(function draw() {
             requestAnimationFrame(draw);
-            
+
             ////////////////
             // DRAW
             ////////////////
