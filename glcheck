@@ -464,12 +464,12 @@ const server = http.createServer((req, res) => {
         ////////////////////
 
         await page.coverage.stopJSCoverage().then((jsCoverage) => {
-            pti.write(jsCoverage.filter(item => {
+            jsCoverage = jsCoverage.filter(item => {
                 const url = item.url;
 
                 // Filter out scripts embedded in index.html
                 // (i.e. test runner scripts)
-                if (url.match(/\/index\.html$/)) {
+                if (url.match(/\.html$/)) {
                     return false;
                 }
 
@@ -483,7 +483,30 @@ const server = http.createServer((req, res) => {
                 });
 
                 return include; 
-            }));
+            });
+
+            // Puppeteer to Istanbul separates repeat entries
+            const consolidatedEntries = {};
+            jsCoverage.forEach(item => {
+                const url = item.url;
+
+                if (url.match(/-\d+\.js/)) console.log(url);
+
+                if (!consolidatedEntries[url]) {
+                    consolidatedEntries[url] = item;  
+                } else {
+                    consolidatedEntries[url].ranges = consolidatedEntries[url].ranges.concat(item.ranges);
+                }
+            });
+
+
+            const consolidatedCoverage = [];
+            for (const url in consolidatedEntries) {
+                consolidatedCoverage.push(consolidatedEntries[url]);
+            }
+            console.log(consolidatedCoverage.map(i => i.url).sort().join("\n"));
+
+            pti.write(consolidatedCoverage);
         });
     }
 
