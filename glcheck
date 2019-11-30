@@ -167,6 +167,8 @@ const ASSET_DIR = path.resolve(UNIT_TEST_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
+const RENDER_TIMEOUT = 5000;
+const RENDER_POLLING = 50;
 
 
 /////////////////
@@ -369,6 +371,29 @@ const server = http.createServer((req, res) => {
         // RUN RENDER TESTS
         /////////////////////
 
+
+        const instrumentAnimationFrame = `
+            window.glcheck_instrumentAnimationFrame = function(numFrames) {
+                if (window.GLCHECK_RAF_INSTRUMENTED) {
+                    return;
+                }
+
+                let currentFrame = 0;
+                const raf = window.requestAnimationFrame;
+                window.requestAnimationFrame = (fn) => {
+                    if (currentFrame++ < numFrames) {
+                        return raf(fn);
+                    } else {
+                        window.glcheck_renderDone = true;
+                    }
+                };
+
+                window.GLCHECK_RAF_INSTRUMENTED = true;
+            };
+        `;
+        
+        await page.evaluateOnNewDocument(instrumentAnimationFrame);
+
         let renderTestPromises = Promise.resolve();
         renderTestURLs.forEach(({testURL, testPath, referenceFileName}) => {
             const referencePath = path.resolve(REFERENCE_IMAGE_DIR, referenceFileName);
@@ -379,7 +404,7 @@ const server = http.createServer((req, res) => {
                     results.numTests++;
 
                     return page.goto(testURL)
-                    .then(() => page.waitForFunction("window.glcheck_renderDone", {timeout: 1000}))
+                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: RENDER_TIMEOUT}))
                     .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
                     .then(([ actualData, expectedData ]) => {
                         const actual = PNG.read(actualData);
@@ -412,11 +437,18 @@ const server = http.createServer((req, res) => {
                         }
                     });
                 }).catch(() => {
-                    console.log(`\n\u001b[33m Capturing reference image: ${testPath}\u001b[0m`);
+                    console.log(`\n\u001b[33mCapturing reference image: ${testPath}\u001b[0m`);
                     
                     return page.goto(testURL)
-                    .then(() => {
-                        return page.screenshot({ path: referencePath });
+                    .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: RENDER_TIMEOUT}))
+                    .then(() => page.screenshot({ path: referencePath }))
+                    .catch((e) => {
+                        console.log(`\n\u001b[31mError while capturing reference image: ${testPath}\u001b[0m`);
+                        if (e.name === "TimeoutError") {
+                            console.log("\u001b[31mRender test timeout (did you forget to set 'glcheck_renderDone' in the page?)\u001b[0m\n");
+                        } else {
+                            console.log(`\u001b[31m${e.stack}\u001b[0m\n`);
+                        }
                     });
                 }); 
             });
