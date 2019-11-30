@@ -56,8 +56,8 @@ Optional arguments:
   --headless {true/false}          Run headless [default: true].
   --server-port PORT               Port to run testing server on [default: 7171].
   --render-test-threshold VAL      Match threshold between 0 and 1 for render tests [default: 0.99].
-  --unit-test-dir PATH             Path to output results to [default: glcheck-tests/unit-tests/].
-  --reference-image-dir PATH       Path to output results to [default: glcheck-tests/reference-images/].
+  --unit-test-dir PATH             Path to output unit test results to [default: glcheck-tests/unit-tests/].
+  --reference-image-dir PATH       Path to render test reference images [default: glcheck-tests/reference-images/].
   --asset-dir PATH                 Path to copy assets from.
   --run-unit-tests {true/false}    Run unit tests [default: true].
   --run-render-tests {true/false}  Run render tests [default: true].
