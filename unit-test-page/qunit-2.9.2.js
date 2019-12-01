@@ -10,6 +10,7 @@
  *
  * Modifications for gltest by Tarek Sherif (c) 2019:
  * - "negative" property from test details exposed in reports.
+ * - Don't fail on no assertions.
  */
 (function (global$1) {
   'use strict';
@@ -3139,8 +3140,6 @@
   			this.pushFailure("Expected number of assertions to be defined, but expect() was " + "not called.", this.stack);
   		} else if (this.expected !== null && this.expected !== this.assertions.length) {
   			this.pushFailure("Expected " + this.expected + " assertions, but " + this.assertions.length + " were run", this.stack);
-  		} else if (this.expected === null && !this.assertions.length) {
-  			this.pushFailure("Expected at least one assertion, but none were run - call " + "expect(0) to accept zero assertions.", this.stack);
   		}
 
   		var i,

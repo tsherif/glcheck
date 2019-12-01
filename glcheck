@@ -352,9 +352,6 @@ const server = http.createServer((req, res) => {
             const testEndPromise = page.exposeFunction("glcheck_testEnd", (test) => {
                 const assertions = test.assertions;
                 const count = assertions.length;
-                if (count === 0) {
-                    return;
-                }
                 results.numTests++;
                 results.numAssertions += count;
                 if (test.status === "passed") {
