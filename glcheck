@@ -400,10 +400,10 @@ const server = http.createServer((req, res) => {
         // SET UP RENDER TEST DIRECTORY
         /////////////////////////////////
 
-        const dirWrites = [fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true})];
+        const dirWrites = [ fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true}) ];
 
         if (config.saveRenderFailures) {
-            dirWrites.push(fs.mkdir(RENDER_FAILURE_DIR, {recursive: true}))
+            dirWrites.push(fs.mkdir(RENDER_FAILURE_DIR, {recursive: true}));
         }
 
         await Promise.all(dirWrites);
@@ -481,7 +481,6 @@ const server = http.createServer((req, res) => {
 
                         if (passed) {
                             console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
-                            return null;
                         } else {
                             results.passed = false;
                             results.numFailed++;
@@ -499,7 +498,10 @@ const server = http.createServer((req, res) => {
                                     fs.writeFile(diffPath, PNG.sync.write(diffImage))
                                 ]);
                             }
+
                         }
+                        
+                        return null;
                     }).catch(e => {
                         results.passed = false;
                         results.numFailed++;
