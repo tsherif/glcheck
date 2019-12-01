@@ -28,16 +28,18 @@ By default, `glcheck` will read configuration from `glcheck.config.json` in the 
 - **referenceImageDir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
 - **renderTestThreshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
 - **renderTimeout** (default: `5000`): Timeout for each render test in milliseconds.
+- **saveRenderFailures** (default: `false`): Whether to save render failure and diff images for render tests.
+- **renderFailureDir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
 - **serverPort** (default: `7171`): Port to run the local server on for puppeteer.
 - **headless** (default: `true`): Whether to run headless.
-- **coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
 - **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
 - **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 Full `glcheck` command line usage is as follows:
 
 ```bash
-glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH] [--run-unit-tests {true/false}] [--run-render-tests {true/false}] [--only PATH]
+glcheck [--help] [--version] [--config PATH] [--unit-test-dir PATH] [--asset-dir PATH] [--reference-image-dir PATH] [--render-test-threshold VAL] [--render-timeout TIME] [--save-render-failures {true/false}] [--render-failure-dir PATH] [--server-port PORT] [--coverage {true/false}] [--headless {true/false}] [--only PATH]
 ```
 
 Command line arguments will always override options from the config file:
@@ -49,9 +51,11 @@ Command line arguments will always override options from the config file:
 - **--reference-image-dir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
 - **--render-test-threshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
 - **--render-timeout** (default: `5000`): Timeout for each render test in milliseconds.
+- **--save-render-failures** (default: `false`): Whether to save render failure and diff images for render tests.
+- **--render-failure-dir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
 - **--headless** (default: `true`): Whether to run headless.
-- **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **--coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
 - **--only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 # Unit Tests
@@ -212,12 +216,11 @@ glCheck("loopUntil helper", async (t, canvas) => {
 
 # Render Tests
 
-Render tests are run simply by providing a list of HTML files to render and a directory to store reference images in the configuration file:
+Render tests are run by providing a list of HTML files to render in the configuration file:
 
 ```json
 {
-    "renderTests": "test/render/*.html",
-    "referenceImageDir": "test/render/reference-images"
+    "renderTests": "test/render/*.html"
 }
 ```
 
@@ -227,10 +230,9 @@ To be usable as a render test, a page must simply indicate when it has completed
 window.glcheck_renderDone = true;
 ```
 
-It recommended to stop animations once `glcheck_renderDone` is set to ensure consistent results. 
+**NOTE:** It recommended to stop animations once `glcheck_renderDone` is set to ensure consistent results. 
 
-
-**glcheck** also exposes a helper function `glcheck_setRAFCount` to pages loaded as render tests to simplify controlling animations signaling that a render is complete.
+**glcheck** also exposes a helper function `glcheck_setRAFCount` to pages loaded as render tests to simplify controlling animations and signaling that a render is complete.
 - `glcheck_setRAFCount(numFrames)`: Instrument `requestAnimationFrame` to only loop `numFrames` times and set `glcheck_renderDone` afterwards.
 
 This can be helpful in instrumenting a page to stop rendering when used as a render test, but render normally otherwise.
