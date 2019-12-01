@@ -44,7 +44,7 @@ const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
                [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
                [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH]
-               [--run-unit-tests {true/false}] [--run-render-tests {true/false}] 
+               [--run-unit-tests {true/false}] [--run-render-tests {true/false}] [--only PATH]
 
 Test WebGL 1 and 2 applications.
 
@@ -62,6 +62,7 @@ Optional arguments:
   --asset-dir PATH                 Path to copy assets from.
   --run-unit-tests {true/false}    Run unit tests [default: true].
   --run-render-tests {true/false}  Run render tests [default: true].
+  --only PATH                      Only run test file PATH (can be a glob pattern to run multiple files).
 `;
 
 let config = {
@@ -77,7 +78,8 @@ let config = {
     coverageExcludeFiles: [],
     headless: true,
     runUnitTests: true,
-    runRenderTests: true
+    runRenderTests: true,
+    only: null
 };
 
 const argv = process.argv.slice(2);
@@ -124,6 +126,9 @@ for (let i = 0; i < argc; ++i) {
         case "--run-render-tests":
             arg = arg || argv[++i];
             args.runRenderTests = arg.toLowerCase() !== "false";
+            break;
+        case "--only":
+            args.only = arg || argv[++i];
             break;
         case "--self-test":
             args.selfTest = true;
@@ -189,6 +194,41 @@ const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
 const RENDER_POLLING = 10;
 
+///////////////
+// FILE PATHS
+///////////////
+
+let unitTests = [];
+let renderTests = [];
+
+config.unitTests.forEach(t => {
+    unitTests.push(...glob(t));
+});
+
+config.renderTests.forEach((t) => {
+    renderTests.push(...glob(t));
+});
+
+if (config.only) {
+    const only = {};
+
+    glob(config.only).forEach(p => only[p] = true);
+
+    unitTests = unitTests.filter(t => only[t]);
+    renderTests = renderTests.filter(t => only[t]);
+}
+
+const EXCLUDE_FILES = [];
+const EXCLUDE_REGEX = [];
+
+config.coverageExcludeFiles.forEach((t) => {
+    EXCLUDE_FILES.push(...glob(t));
+});
+
+unitTests.concat(EXCLUDE_FILES).forEach(p => {
+    EXCLUDE_REGEX.push(new RegExp(`/${p}$`));
+});
+
 
 /////////////////
 // LOCAL SERVER
@@ -210,14 +250,6 @@ const MIME_TYPES = {
     ".mpg": "video/mpeg",
     ".ogv": "video/ogg"
 };
-
-const coverageExcludeFiles = config.unitTests.concat(config.coverageExcludeFiles);
-const EXCLUDE_REGEX = [];
-coverageExcludeFiles.forEach(ex => {
-    glob(ex).map(p => {
-        EXCLUDE_REGEX.push(new RegExp(`/${p}$`));
-    }); 
-});
 
 const server = http.createServer((req, res) => {
     const url = req.url; 
@@ -281,7 +313,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.runUnitTests && config.unitTests.length > 0) {
+    if (config.runUnitTests && unitTests.length > 0) {
         ///////////////////////////////
         // SET UP UNIT TEST DIRECTORY
         ///////////////////////////////
@@ -296,10 +328,8 @@ const server = http.createServer((req, res) => {
         ]);
 
         const testPaths = [];
-        config.unitTests.forEach(t => {
-            glob(t).forEach(p => {
-                testPaths.push(`import "/${p}";`);
-            });
+        unitTests.forEach(p => {
+            testPaths.push(`import "/${p}";`);
         });
 
         let index = template
@@ -362,7 +392,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.runRenderTests && config.renderTests.length > 0) {
+    if (config.runRenderTests && renderTests.length > 0) {
         /////////////////
         // RENDER TESTS
         /////////////////
@@ -376,13 +406,11 @@ const server = http.createServer((req, res) => {
         await fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true});
         
         const renderTestURLs = [];
-        config.renderTests.forEach((t) => {
-            glob(t).forEach(p => {
-                renderTestURLs.push({
-                    testURL: `${BASE_URL}${p}`,
-                    testPath: p,
-                    referenceFileName: `${p.replace(/\//g, "-")}.png`
-                });
+        renderTests.forEach(p => {
+            renderTestURLs.push({
+                testURL: `${BASE_URL}${p}`,
+                testPath: p,
+                referenceFileName: `${p.replace(/\//g, "-")}.png`
             });
         });
 

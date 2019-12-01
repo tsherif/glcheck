@@ -34,11 +34,12 @@ By default, `glcheck` will read configuration from `glcheck.config.json` in the 
 - **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
 - **runUnitTests** (default: `true`): Whether to run unit tests.
 - **runRenderTests** (default: `true`): Whether to run render tests.
+- **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 Full `glcheck` command line usage is as follows:
 
 ```bash
-glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH] [TEST FILES...]
+glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH] [--run-unit-tests {true/false}] [--run-render-tests {true/false}] [--only PATH]
 ```
 
 Command line arguments will always override options from the config file:
@@ -53,9 +54,9 @@ Command line arguments will always override options from the config file:
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
 - **--headless** (default: `true`): Whether to run headless.
 - **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **--run--unit-tests** (default: `true`): Whether to run unit tests.
-- **--run--render-tests** (default: `true`): Whether to run render tests.
-
+- **--run-unit-tests** (default: `true`): Whether to run unit tests.
+- **--run-render-tests** (default: `true`): Whether to run render tests.
+- **--only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 # Unit Tests
 
@@ -109,19 +110,6 @@ Test functions can also be async:
 glCheck("My test", async (t, canvas) => {
 
     const data = await getAsyncData();
-
-    // Write some tests
-
-    t.done();
-});
-```
-
-A single test can be selected to run on its own using `glCheck.only`:
-
-
-```js
-
-glCheck.only("Test I'm writing now", (t, canvas) => {
 
     // Write some tests
 

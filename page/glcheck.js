@@ -23,28 +23,9 @@
 
 (function(QUnit) {
 
-    let onlyRunning = false;
-    let onlyTest = null;
-    
     function glCheck(name, fn) {
         QUnit.test(name, (assert) => runTest(assert, fn));
     }
-
-    glCheck.only = function only(name, fn) {
-        if (onlyRunning) {
-            const errorMessage = `
-glCheck.only can only be run with one test at a time.
-Already running "${onlyTest}".
-Tried to run "${name}".      
-            `.trim();
-            throw new Error(errorMessage);            
-        }
-
-        onlyRunning = true;
-        onlyTest = name;
-
-        QUnit.only(name, (assert) => runTest(assert, fn));
-    };
 
     function runTest(assert, fn) {
         let canvas = document.createElement("canvas");
