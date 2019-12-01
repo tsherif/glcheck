@@ -172,7 +172,9 @@ if (args.clearConfig) {
     config = { 
         unitTests: config.unitTests,
         renderTests: config.renderTests,
-        coverageExcludeFiles: config.coverageExcludeFiles
+        coverageExcludeFiles: config.coverageExcludeFiles,
+        runUnitTests: true,
+        runRenderTests: true
     };
 }
 
@@ -510,8 +512,6 @@ const server = http.createServer((req, res) => {
             const consolidatedEntries = {};
             jsCoverage.forEach(item => {
                 const url = item.url;
-
-                if (url.match(/-\d+\.js/)) console.log(url);
 
                 if (!consolidatedEntries[url]) {
                     consolidatedEntries[url] = item;  
