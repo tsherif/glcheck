@@ -1,6 +1,6 @@
 {
   "name": "glcheck",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A testing framework for WebGL 1 and 2 applications",
   "bin": "glcheck",
   "repository": {
