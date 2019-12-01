@@ -1,11 +1,14 @@
 {
-    "unitTestDir": "full-config-test/unit-tests/",
-    "referenceImageDir": "full-config-test/reference-images/",
-    "serverPort": 5151,
     "unitTests": "test/test.js",
-    "renderTests": "test/render/*.html",
+    "unitTestDir": "full-config-test/unit-tests/",
     "assetDir": "test/assets/",
+    "renderTests": "test/render/*.html",
+    "referenceImageDir": "full-config-test/reference-images/",
+    "renderTimeout": 10000,
+    "saveRenderFailures": true,
+    "renderFailureDir": "full-config-test/render-failures/",
+    "serverPort": 5151,
+    "headless": true,
     "coverage": true,
-    "coverageExcludeFiles": [],
-    "headless": true
+    "coverageExcludeFiles": []
 }
