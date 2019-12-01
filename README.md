@@ -33,7 +33,7 @@ By default, `glcheck` will read configuration from `glcheck.config.json` in the 
 - **serverPort** (default: `7171`): Port to run the local server on for puppeteer.
 - **headless** (default: `true`): Whether to run headless.
 - **coverage** (default: `true`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **coverageFiles** (default: `[]`): Files to include in results.
+- **coverageFiles** (default: `[]`): Files to include in coverage results.
 - **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 Full `glcheck` command line usage is as follows:
