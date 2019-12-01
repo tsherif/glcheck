@@ -8,7 +8,7 @@
     "url": "https://github.com/tsherif/glcheck"
   },
   "scripts": {
-    "lint": "eslint glcheck page/glcheck.js",
+    "lint": "eslint glcheck unit-test-page/glcheck.js",
     "test": "npm run lint && ./glcheck && npm run test-full-config && npm run test-cli-args && npm run test-cli-equal-args",
     "with-full-config": "./glcheck --config test/test-configs/full-config.json",
     "test-full-config": "npm run with-full-config && test -d full-config-test/unit-tests && test -d .nyc_output && npm run with-full-config && test -e full-config-test/reference-images/test-render-render-test.html.png && rimraf full-config-test",

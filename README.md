@@ -64,7 +64,7 @@ A slimple unit test suite using **glcheck** might look like the following:
 
 ```js
 
-glCheck("Test myApp", (t, canvas) => {
+glcheck("Test myApp", (t, canvas) => {
     const gl = canvas.createContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
@@ -88,11 +88,11 @@ glCheck("Test myApp", (t, canvas) => {
 
 ```
 
-Unit tests are defined for `glcheck` using the `glCheck` function. The general structure is as follows:
+Unit tests are defined using the `glcheck` function. The general structure is as follows:
 
 ```js
 
-glCheck("My test", (t, canvas) => {
+glcheck("My test", (t, canvas) => {
 
     // Write some tests
 
@@ -107,7 +107,7 @@ Test functions can also be async:
 
 ```js
 
-glCheck("My test", async (t, canvas) => {
+glcheck("My test", async (t, canvas) => {
 
     const data = await getAsyncData();
 
@@ -121,12 +121,12 @@ The tester object's `done` method indicates that the test has completed and can 
 - `t.done()`: Indicate that a test has completed.
 
 ```js
-glCheck("Basic", async (t, canvas) => {
+glcheck("Basic", async (t, canvas) => {
     t.ok(true, "ok");
     t.done();
 });
 
-glCheck("Async", async (t, canvas) => {
+glcheck("Async", async (t, canvas) => {
     setTimeout(() => {
         t.ok(true, "ok");
         t.done();
@@ -145,7 +145,7 @@ The tester object exposes the following basic assertions:
 - `t.doesNotThrow(fn, message)`: Check that `fn` does not throw an exception.
 
 ```js
-glCheck("Basic assertions", (t, canvas) => {
+glcheck("Basic assertions", (t, canvas) => {
     t.ok(true, "ok");
     t.equal(1, 1, "equal");
     t.deepEqual({a: 1, b: 2}, {a: 1, b: 2}, "deepEqual");
@@ -168,7 +168,7 @@ The tester object also exposes WebGL-specific assertions:
 - `t.bufferNotEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` does not contain the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
 
 ```js
-glCheck("GL assertions", (t, canvas) => {
+glcheck("GL assertions", (t, canvas) => {
     const gl = canvas.getContext("webgl2");
 
     t.parameterEqual(gl, gl.DEPTH_TEST, true, "parameterEqual");
@@ -198,7 +198,7 @@ Finally, the tester object exposes the async helper `loopUntil` for tests that r
 - `t.loopUntil(fn)`: Returns a promise that starts a `requestAnimationFrame` loop, calling `fn` on each frame and resolving when it returns true.
 
 ```js
-glCheck("loopUntil helper", async (t, canvas) => {
+glcheck("loopUntil helper", async (t, canvas) => {
     const gl = canvas.getContext("webgl2");
     const query = gl.createQuery();
 

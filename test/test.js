@@ -1,4 +1,4 @@
-glCheck("Basic assertions", (t, canvas) => {
+glcheck("Basic assertions", (t, canvas) => {
     t.ok(true, "ok");
     t.notOk(false, "notOk");
 
@@ -26,7 +26,7 @@ glCheck("Basic assertions", (t, canvas) => {
     t.done();
 });
 
-glCheck("GL parameters", (t, canvas) => {
+glcheck("GL parameters", (t, canvas) => {
     let gl = canvas.getContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
@@ -40,7 +40,7 @@ glCheck("GL parameters", (t, canvas) => {
     t.done();
 });
 
-glCheck("GL buffers", (t, canvas) => {
+glcheck("GL buffers", (t, canvas) => {
     let gl = canvas.getContext("webgl2");
 
     let buffer = gl.createBuffer();
@@ -60,7 +60,7 @@ glCheck("GL buffers", (t, canvas) => {
     t.done();
 });
 
-glCheck("GL draw", (t, canvas) => {
+glcheck("GL draw", (t, canvas) => {
     let gl = canvas.getContext("webgl2");
 
     gl.clearColor(1, 0, 0, 1);
@@ -108,7 +108,7 @@ glCheck("GL draw", (t, canvas) => {
     t.done();
 });
 
-glCheck("Async", async (t, canvas) => {
+glcheck("Async", async (t, canvas) => {
     let done = false;
     setTimeout(() => {
         t.ok(true, "Async test");
@@ -120,7 +120,7 @@ glCheck("Async", async (t, canvas) => {
     t.done();
 });
 
-glCheck("Assets", async (t, canvas) => {
+glcheck("Assets", async (t, canvas) => {
     let response = await fetch("assets/asset.json");
     let json = await response.json();
 
@@ -129,7 +129,7 @@ glCheck("Assets", async (t, canvas) => {
     t.done();
 });
 
-glCheck("Bad json", async (t, canvas) => {
+glcheck("Bad json", async (t, canvas) => {
     const circular1 = {a: 1};
     circular1.circular = circular1;
 

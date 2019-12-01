@@ -23,7 +23,7 @@
 
 (function(QUnit) {
 
-    function glCheck(name, fn) {
+    function glcheck(name, fn) {
         QUnit.test(name, (assert) => runTest(assert, fn));
     }
 
@@ -185,7 +185,7 @@
         });
     }
 
-    window.glCheck = glCheck;
+    window.glcheck = glcheck;
 
     // Functions exposed by glcheck test runner
     if (window.glcheck_testEnd) {

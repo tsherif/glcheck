@@ -320,9 +320,9 @@ const server = http.createServer((req, res) => {
         rimraf(UNIT_TEST_DIR);
 
         const [ template, qunit, glcheck ] = await Promise.all([
-            fs.readFile(path.resolve(__dirname, "page/index-template.html"), "utf8"),
-            fs.readFile(path.resolve(__dirname, "page/qunit-2.9.2.js"), "utf8"),
-            fs.readFile(path.resolve(__dirname, "page/glcheck.js"), "utf8"),
+            fs.readFile(path.resolve(__dirname, "unit-test-page/index-template.html"), "utf8"),
+            fs.readFile(path.resolve(__dirname, "unit-test-page/qunit-2.9.2.js"), "utf8"),
+            fs.readFile(path.resolve(__dirname, "unit-test-page/glcheck.js"), "utf8"),
             fs.mkdir(UNIT_TEST_DIR, {recursive: true})
         ]);
 
