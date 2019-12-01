@@ -32,8 +32,6 @@ By default, `glcheck` will read configuration from `glcheck.config.json` in the 
 - **headless** (default: `true`): Whether to run headless.
 - **coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
 - **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
-- **runUnitTests** (default: `true`): Whether to run unit tests.
-- **runRenderTests** (default: `true`): Whether to run render tests.
 - **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 Full `glcheck` command line usage is as follows:
@@ -54,8 +52,6 @@ Command line arguments will always override options from the config file:
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
 - **--headless** (default: `true`): Whether to run headless.
 - **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **--run-unit-tests** (default: `true`): Whether to run unit tests.
-- **--run-render-tests** (default: `true`): Whether to run render tests.
 - **--only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 # Unit Tests

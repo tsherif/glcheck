@@ -43,8 +43,7 @@ const pixelmatch = require("pixelmatch");
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
                [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
-               [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH]
-               [--run-unit-tests {true/false}] [--run-render-tests {true/false}] [--only PATH]
+               [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH] [--only PATH]
 
 Test WebGL 1 and 2 applications.
 
@@ -60,8 +59,6 @@ Optional arguments:
   --reference-image-dir PATH       Path to render test reference images [default: glcheck-tests/reference-images/].
   --render-timeout TIME            Timeout for each render test in milliseconds [default: 5000].
   --asset-dir PATH                 Path to copy assets from.
-  --run-unit-tests {true/false}    Run unit tests [default: true].
-  --run-render-tests {true/false}  Run render tests [default: true].
   --only PATH                      Only run test file PATH (can be a glob pattern to run multiple files).
 `;
 
@@ -77,8 +74,6 @@ let config = {
     coverage: false,
     coverageExcludeFiles: [],
     headless: true,
-    runUnitTests: true,
-    runRenderTests: true,
     only: null
 };
 
@@ -118,14 +113,6 @@ for (let i = 0; i < argc; ++i) {
             break;
         case "--render-timeout":
             args.renderTimeout = parseInt(arg || argv[++i], 10);
-            break;
-        case "--run-unit-tests":
-            arg = arg || argv[++i];
-            args.runUnitTests = arg.toLowerCase() !== "false";
-            break;
-        case "--run-render-tests":
-            arg = arg || argv[++i];
-            args.runRenderTests = arg.toLowerCase() !== "false";
             break;
         case "--only":
             args.only = arg || argv[++i];
@@ -177,9 +164,7 @@ if (args.clearConfig) {
     config = { 
         unitTests: config.unitTests,
         renderTests: config.renderTests,
-        coverageExcludeFiles: config.coverageExcludeFiles,
-        runUnitTests: true,
-        runRenderTests: true
+        coverageExcludeFiles: config.coverageExcludeFiles
     };
 }
 
@@ -313,7 +298,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.runUnitTests && unitTests.length > 0) {
+    if (unitTests.length > 0) {
         ///////////////////////////////
         // SET UP UNIT TEST DIRECTORY
         ///////////////////////////////
@@ -392,7 +377,7 @@ const server = http.createServer((req, res) => {
         });
     }
 
-    if (config.runRenderTests && renderTests.length > 0) {
+    if (renderTests.length > 0) {
         /////////////////
         // RENDER TESTS
         /////////////////
