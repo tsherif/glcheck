@@ -10,5 +10,5 @@
     "serverPort": 5151,
     "headless": true,
     "coverage": true,
-    "coverageExcludeFiles": []
+    "coverageFiles": "unit-test-page/glcheck.js"
 }

@@ -39,7 +39,6 @@ const pixelmatch = require("pixelmatch");
 // CONFIGURATION
 //////////////////
 
-
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
 const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--unit-test-dir PATH]
                         [--asset-dir PATH] [--reference-image-dir PATH] [--render-test-threshold VAL]
@@ -62,7 +61,7 @@ Optional arguments:
   --render-failure-dir PATH           Path to save render failures and diffs to [default: glcheck-tests/render-failures/].
   --server-port PORT                  Port to run testing server on [default: 7171].
   --headless {true/false}             Run headless [default: true].
-  --coverage {true/false}             Generate coverage results that can be consumed by Istanbul [default: false].
+  --coverage {true/false}             Generate coverage results that can be consumed by Istanbul [default: true].
   --only PATH                         Only run test file PATH (can be a glob pattern to run multiple files).
 `;
 
@@ -77,8 +76,8 @@ let config = {
     saveRenderFailures: false,
     renderFailureDir: "glcheck-tests/render-failures/",
     assetDir: null,
-    coverage: false,
-    coverageExcludeFiles: [],
+    coverage: true,
+    coverageFiles: [],
     headless: true,
     only: null
 };
@@ -94,13 +93,13 @@ for (let i = 0; i < argc; ++i) {
         case "--config":
             args.configPath = arg || argv[++i];
             break;
-        case "--coverage":
-            arg = arg || argv[++i];
-            args.coverage = arg.toLowerCase() !== "false";
-            break;
         case "--headless":
             arg = arg || argv[++i];
             args.headless = arg.toLowerCase() !== "false";
+            break;
+        case "--coverage":
+            arg = arg || argv[++i];
+            args.coverage = arg.toLowerCase() !== "false";
             break;
         case "--server-port":
             args.serverPort = parseInt(arg || argv[++i], 10);
@@ -156,15 +155,15 @@ try {
     Object.assign(config, require(configPath));
     config.unitTests = config.unitTests || [];
     config.renderTests = config.renderTests || [];
-    config.coverageExcludeFiles = config.coverageExcludeFiles || [];
+    config.coverageFiles = config.coverageFiles || [];
     if (!Array.isArray(config.unitTests)) {
         config.unitTests = [ config.unitTests ];
     }
     if (!Array.isArray(config.renderTests)) {
         config.renderTests = [ config.renderTests ];
     }
-    if (!Array.isArray(config.coverageExcludeFiles)) {
-        config.coverageExcludeFiles = [ config.coverageExcludeFiles ];
+    if (!Array.isArray(config.coverageFiles)) {
+        config.coverageFiles = [ config.coverageFiles ];
     }
 } catch (e) {
     if (args.configPath) {
@@ -177,7 +176,7 @@ if (args.clearConfig) {
     config = { 
         unitTests: config.unitTests,
         renderTests: config.renderTests,
-        coverageExcludeFiles: config.coverageExcludeFiles
+        coverageFiles: config.coverageFiles
     };
 }
 
@@ -186,12 +185,14 @@ Object.assign(config, args);
 
 const SELF_TEST = Boolean(args.selfTest);
 const UNIT_TEST_DIR = path.resolve(".", config.unitTestDir);
+const UNIT_TEST_URL = UNIT_TEST_DIR.replace(process.cwd(), "");
 const ASSET_DIR = path.resolve(UNIT_TEST_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
 const RENDER_FAILURE_DIR = path.resolve(".", config.renderFailureDir);
-const BASE_URL = `http://localhost:${config.serverPort}/`;
+const BASE_URL = `http://localhost:${config.serverPort}`;
 const RENDER_POLLING = 10;
+const COVERAGE = config.coverage && config.coverageFiles.length > 0;
 
 ///////////////
 // FILE PATHS
@@ -199,13 +200,18 @@ const RENDER_POLLING = 10;
 
 let unitTests = [];
 let renderTests = [];
+let coverageURLs = {};
 
 config.unitTests.forEach(t => {
     unitTests.push(...glob(t));
 });
 
-config.renderTests.forEach((t) => {
+config.renderTests.forEach(t => {
     renderTests.push(...glob(t));
+});
+
+config.coverageFiles.forEach(f => {
+    glob(f).map(p => `${BASE_URL}/${p}`).forEach(url => coverageURLs[url] = true);
 });
 
 if (config.only) {
@@ -216,17 +222,6 @@ if (config.only) {
     unitTests = unitTests.filter(t => only[t]);
     renderTests = renderTests.filter(t => only[t]);
 }
-
-const EXCLUDE_FILES = [];
-const EXCLUDE_REGEX = [];
-
-config.coverageExcludeFiles.forEach((t) => {
-    EXCLUDE_FILES.push(...glob(t));
-});
-
-unitTests.concat(EXCLUDE_FILES).forEach(p => {
-    EXCLUDE_REGEX.push(new RegExp(`/${p}$`));
-});
 
 
 /////////////////
@@ -305,7 +300,7 @@ const server = http.createServer((req, res) => {
     });
 
 
-    if (config.coverage) {
+    if (COVERAGE) {
         rimraf(COVERAGE_DIR);
         await page.coverage.startJSCoverage({
             resetOnNavigation: false
@@ -387,7 +382,7 @@ const server = http.createServer((req, res) => {
             });
 
             return Promise.all([ testEndPromise, runEndPromise ])
-            .then(() => page.goto(`${BASE_URL}${config.unitTestDir}/index.html`));
+            .then(() => page.goto(`${BASE_URL}${UNIT_TEST_URL}/index.html`));
         });
     }
 
@@ -411,7 +406,7 @@ const server = http.createServer((req, res) => {
         const renderTestURLs = [];
         renderTests.forEach(p => {
             renderTestURLs.push({
-                testURL: `${BASE_URL}${p}`,
+                testURL: `${BASE_URL}/${p}`,
                 testPath: p,
                 referenceFileName: `${p.replace(/\//g, "-")}.png`
             });
@@ -533,33 +528,14 @@ const server = http.createServer((req, res) => {
         await renderTestPromises;
     }
 
-    if (config.coverage) {
+    if (COVERAGE) {
 
         ////////////////////
         // COVERAGE REPORT
         ////////////////////
 
         await page.coverage.stopJSCoverage().then((jsCoverage) => {
-            jsCoverage = jsCoverage.filter(item => {
-                const url = item.url;
-
-                // Filter out scripts embedded in index.html
-                // (i.e. test runner scripts)
-                if (url.match(/\.html$/)) {
-                    return false;
-                }
-
-                // Filter out test files and files
-                // excluded by config
-                let include = true;
-                EXCLUDE_REGEX.forEach(ex => {
-                    if (url.match(ex)) {
-                        include = false;
-                    }
-                });
-
-                return include; 
-            });
+            jsCoverage = jsCoverage.filter(item => coverageURLs[item.url]);
 
             // Puppeteer to Istanbul separates repeat entries
             const consolidatedEntries = {};

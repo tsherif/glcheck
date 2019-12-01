@@ -2,5 +2,6 @@
     "unitTests": "test/test.js",
     "assetDir": "test/assets/",
     "renderTests": "test/render/*.html",
-    "referenceImageDir": "test/render/reference-images"
+    "referenceImageDir": "test/render/reference-images",
+    "coverageFiles": "glcheck-tests/unit-tests/glcheck.js"
 }

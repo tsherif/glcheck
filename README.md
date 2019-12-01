@@ -32,8 +32,8 @@ By default, `glcheck` will read configuration from `glcheck.config.json` in the 
 - **renderFailureDir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
 - **serverPort** (default: `7171`): Port to run the local server on for puppeteer.
 - **headless** (default: `true`): Whether to run headless.
-- **coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
+- **coverage** (default: `true`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **coverageFiles** (default: `[]`): Files to include in results.
 - **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 Full `glcheck` command line usage is as follows:
@@ -55,7 +55,7 @@ Command line arguments will always override options from the config file:
 - **--render-failure-dir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
 - **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
 - **--headless** (default: `true`): Whether to run headless.
-- **--coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **--coverage** (default: `true`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
 - **--only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
 
 # Unit Tests
