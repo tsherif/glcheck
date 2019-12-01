@@ -32,7 +32,7 @@ const path = require("path");
 const glob = require("glob").sync;
 const copydir = require("copy-dir").sync;
 const rimraf = require("rimraf").sync;
-const PNG = require("pngjs").PNG.sync;
+const PNG = require("pngjs").PNG;
 const pixelmatch = require("pixelmatch");
 
 //////////////////
@@ -41,25 +41,29 @@ const pixelmatch = require("pixelmatch");
 
 
 const GLTEST_PKG = require(path.resolve(__dirname, "package.json"));
-const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] 
-               [--headless {true/false}] [--server-port PORT] [--render-test-threshold VAL] 
-               [--unit-test-dir PATH] [--reference-image-dir PATH] [--asset-dir PATH] [--only PATH]
+const HELP_MESSAGE = `usage: glcheck [--help] [--version] [--config PATH] [--unit-test-dir PATH]
+                        [--asset-dir PATH] [--reference-image-dir PATH] [--render-test-threshold VAL]
+                        [--render-timeout TIME] [--save-render-failures {true/false}]
+                        [--render-failure-dir PATH] [--server-port PORT] [--coverage {true/false}] 
+                        [--headless {true/false}] [--only PATH]
 
 Test WebGL 1 and 2 applications.
 
 Optional arguments:
-  --help                           Show this help message and exit.
-  --version                        Show program's version number and exit.
-  --config PATH                    Path to config file (default: ./glcheck.config.json)
-  --coverage {true/false}          Generate coverage results that can be consumed by Istanbul [default: false].
-  --headless {true/false}          Run headless [default: true].
-  --server-port PORT               Port to run testing server on [default: 7171].
-  --render-test-threshold VAL      Match threshold between 0 and 1 for render tests [default: 0.99].
-  --unit-test-dir PATH             Path to output unit test results to [default: glcheck-tests/unit-tests/].
-  --reference-image-dir PATH       Path to render test reference images [default: glcheck-tests/reference-images/].
-  --render-timeout TIME            Timeout for each render test in milliseconds [default: 5000].
-  --asset-dir PATH                 Path to copy assets from.
-  --only PATH                      Only run test file PATH (can be a glob pattern to run multiple files).
+  --help                              Show this help message and exit.
+  --version                           Show program's version number and exit.
+  --config PATH                       Path to config file (default: ./glcheck.config.json)
+  --unit-test-dir PATH                Path to output unit test results to [default: glcheck-tests/unit-tests/].
+  --asset-dir PATH                    Directory to copy assets from for unit tests.
+  --reference-image-dir PATH          Path to render test reference images [default: glcheck-tests/reference-images/].
+  --render-test-threshold VAL         Match threshold between 0 and 1 for render tests [default: 0.99].
+  --render-timeout TIME               Timeout for each render test in milliseconds [default: 5000].
+  --save-render-failures {true/false} Save render failures and diffs [default: false].
+  --render-failure-dir PATH           Path to save render failures and diffs to [default: glcheck-tests/render-failures/].
+  --server-port PORT                  Port to run testing server on [default: 7171].
+  --headless {true/false}             Run headless [default: true].
+  --coverage {true/false}             Generate coverage results that can be consumed by Istanbul [default: false].
+  --only PATH                         Only run test file PATH (can be a glob pattern to run multiple files).
 `;
 
 let config = {
@@ -70,6 +74,8 @@ let config = {
     referenceImageDir: "glcheck-tests/reference-images/",
     renderTestThreshold: 0.99,
     renderTimeout: 5000,
+    saveRenderFailures: false,
+    renderFailureDir: "glcheck-tests/render-failures/",
     assetDir: null,
     coverage: false,
     coverageExcludeFiles: [],
@@ -113,6 +119,13 @@ for (let i = 0; i < argc; ++i) {
             break;
         case "--render-timeout":
             args.renderTimeout = parseInt(arg || argv[++i], 10);
+            break;
+        case "--save-render-failures":
+            arg = arg || argv[++i];
+            args.saveRenderFailures = arg.toLowerCase() !== "false";
+            break;
+        case "--render-failure-dir":
+            args.renderFailureDir = arg || argv[++i];
             break;
         case "--only":
             args.only = arg || argv[++i];
@@ -176,6 +189,7 @@ const UNIT_TEST_DIR = path.resolve(".", config.unitTestDir);
 const ASSET_DIR = path.resolve(UNIT_TEST_DIR, "assets");
 const COVERAGE_DIR = path.resolve(".", ".nyc_output");
 const REFERENCE_IMAGE_DIR = path.resolve(".", config.referenceImageDir);
+const RENDER_FAILURE_DIR = path.resolve(".", config.renderFailureDir);
 const BASE_URL = `http://localhost:${config.serverPort}/`;
 const RENDER_POLLING = 10;
 
@@ -382,13 +396,17 @@ const server = http.createServer((req, res) => {
         // RENDER TESTS
         /////////////////
 
-        
-
         /////////////////////////////////
         // SET UP RENDER TEST DIRECTORY
         /////////////////////////////////
 
-        await fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true});
+        const dirWrites = [fs.mkdir(REFERENCE_IMAGE_DIR, {recursive: true})];
+
+        if (config.saveRenderFailures) {
+            dirWrites.push(fs.mkdir(RENDER_FAILURE_DIR, {recursive: true}))
+        }
+
+        await Promise.all(dirWrites);
         
         const renderTestURLs = [];
         renderTests.forEach(p => {
@@ -443,17 +461,27 @@ const server = http.createServer((req, res) => {
                     .then(() => page.waitForFunction("window.glcheck_renderDone", {polling: RENDER_POLLING, timeout: config.renderTimeout}))
                     .then(() => Promise.all([ page.screenshot(), fs.readFile(referencePath) ]))
                     .then(([ actualData, expectedData ]) => {
-                        const actual = PNG.read(actualData);
-                        const expected = PNG.read(expectedData);
-                        const numPixels = actual.width * actual.height;
+                        const actual = PNG.sync.read(actualData);
+                        const expected = PNG.sync.read(expectedData);
+                        const {width, height} = actual;
+                        const numPixels = width * height;
 
-                        const diff = pixelmatch(actual.data, expected.data, null, actual.width, actual.height);
+                        let diffImage = null;
+                        let diffData = null;
+
+                        if (config.saveRenderFailures) {
+                            diffImage = new PNG({width, height});
+                            diffData = diffImage.data;
+                        }
+
+                        const diff = pixelmatch(actual.data, expected.data, diffData, width, height);
                         const match = 1.0 - diff / numPixels;
 
                         const passed = match >= config.renderTestThreshold;
 
                         if (passed) {
                             console.log(`\u001b[32m\u2714\u001b[0m Render: ${testPath}`);
+                            return null;
                         } else {
                             results.passed = false;
                             results.numFailed++;
@@ -461,6 +489,16 @@ const server = http.createServer((req, res) => {
                             console.log(`    Threshold:  \u001b[32m${config.renderTestThreshold}\u001b[0m`);
                             console.log(`    Match:      \u001b[31m${match.toFixed(3)}\u001b[0m\n`);
                             console.log("\n");
+
+                            if (config.saveRenderFailures) {
+                                const failurePath = path.resolve(RENDER_FAILURE_DIR, referenceFileName.replace(/\.png$/, "-failure.png"));
+                                const diffPath = path.resolve(RENDER_FAILURE_DIR, referenceFileName.replace(/\.png$/, "-diff.png"));
+
+                                return Promise.all([
+                                    fs.writeFile(failurePath, PNG.sync.write(actual)),
+                                    fs.writeFile(diffPath, PNG.sync.write(diffImage))
+                                ]);
+                            }
                         }
                     }).catch(e => {
                         results.passed = false;
