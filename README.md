@@ -1,13 +1,70 @@
 glcheck
-===========
+=======
 
 [![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://img.shields.io/coveralls/github/tsherif/glcheck)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
 
-**glcheck** is a testing framework focused on WebGL applications. It is designed to run in a browser without any build steps, making it straightforward to use across browsers and platforms. It uses puppeteer to run headlessly via the command line which allows it to run automated tests for both WebGL 1 and 2 applications. A slimple test suite using **glcheck** might look like the following:
+**glcheck** is a WebGL-focused testing framework. It runs unit tests and render tests using puppeteer which allows it to run automated tests and generate coverage reports for both WebGL 1 and 2 applications.
+
+# Usage
+
+To install, simply run:
+
+```bash
+npm i -D glcheck
+```
+
+Run using:
+
+```bash
+npx glcheck
+``` 
+
+By default, `glcheck` will read configuration from `glcheck.config.json` in the current directory, from which it will read the following options:
+
+- **unitTests** (default: `[]`): List of JavaScript files to run as unit tests.
+- **unitTestDir** (default: `"glcheck-tests/unit-tests/"`): Directory to output unit test results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
+- **assetDir** (default: `null`): Directory to load assets from. Contents from this directory will be available to unit tests in the subdirectory `assets/`.
+- **renderTests** (default: `[]`): List of HTML files to run as render tests.
+- **referenceImageDir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
+- **renderTestThreshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
+- **renderTimeout** (default: `5000`): Timeout for each render test in milliseconds.
+- **saveRenderFailures** (default: `false`): Whether to save render failure and diff images for render tests.
+- **renderFailureDir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
+- **serverPort** (default: `7171`): Port to run the local server on for puppeteer.
+- **headless** (default: `true`): Whether to run headless.
+- **coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **unitTests** are always excluded from coverage reports.
+- **only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
+
+Full `glcheck` command line usage is as follows:
+
+```bash
+glcheck [--help] [--version] [--config PATH] [--unit-test-dir PATH] [--asset-dir PATH] [--reference-image-dir PATH] [--render-test-threshold VAL] [--render-timeout TIME] [--save-render-failures {true/false}] [--render-failure-dir PATH] [--server-port PORT] [--coverage {true/false}] [--headless {true/false}] [--only PATH]
+```
+
+Command line arguments will always override options from the config file:
+- **--help**: Show a help message and exit.
+- **--version**: Show version number and exit.
+- **--config** (default: `"glcheck.config.json"`): Path to config file.
+- **--unit-test-dir** (default: `"glcheck-results/"`): Directory to output unit test results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser.
+- **--asset-dir** (default: `null`): Directory to load assets from. Contents from this directory will be available to unit tests in the subdirectory `assets/`.
+- **--reference-image-dir** (default: `"glcheck-tests/reference-images/"`): Directory containing render test reference images.
+- **--render-test-threshold** (default: `0.99`): Match threshold between 0 and 1 for render tests.
+- **--render-timeout** (default: `5000`): Timeout for each render test in milliseconds.
+- **--save-render-failures** (default: `false`): Whether to save render failure and diff images for render tests.
+- **--render-failure-dir** (default: `"glcheck-tests/render-failures/"`): Where to save render failure and diff images for render tests.
+- **--server-port** (default: `7171`): Port to run the local server on for puppeteer.
+- **--headless** (default: `true`): Whether to run headless.
+- **--coverage** (default: `false`): Whether to generate coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
+- **--only** (default: `null`): Only run the provided test file (can be a glob pattern to run multiple files).
+
+# Unit Tests
+
+A slimple unit test suite using **glcheck** might look like the following:
 
 ```js
 
-glCheck("Test myApp", (t, canvas) => {
+glcheck("Test myApp", (t, canvas) => {
     const gl = canvas.createContext("webgl2");
 
     gl.enable(gl.DEPTH_TEST);
@@ -31,58 +88,11 @@ glCheck("Test myApp", (t, canvas) => {
 
 ```
 
-## Usage
-
-### Installation
-
-To install, simply run:
-
-```bash
-npm i -D glcheck
-```
-
-### Running
-
-Assuming tests are in a file `test.js`, they can be run directly as follows:
-
-```bash
-npx glcheck test.js
-```
-
-By default, `glcheck` will read configuration from `glcheck.config.json` in the current directory, from which it will read the following options:
-
-- **tests** (default: `[]`): List of tests to run.
-- **outputDir** (default: `"glcheck-results/"`): Directory to output results into. This includes an HTML page that will be run by puppeteer, but it can also simply be opened in a browser. 
-- **serverPort** (default: `7171`): Port to run the local server on for puppeteer testing.
-- **headless** (default: `true`): Whether to run headless.
-- **assetDir** (default: `null`): Directory to load assets from. Contents from this directory will be available to tests in the subdirectory `assets/`.
-- **coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **coverageExcludeFiles** (default: `[]`): Files to exclude from coverage results. This can be useful for excluding utility or library files from coverage reports. Note that files in **tests** are always excluded from coverage reports.
-
-Full `glcheck` command line usage is as follows:
-
-```bash
-glcheck [--help] [--version] [--config PATH] [--coverage {true/false}] [--headless {true/false}] [--server-port PORT] [--output-dir PATH] [--asset-dir PATH] [TEST FILES...]
-```
-
-Command line arguments will always override options from the config file:
-- **--help**: Show a help message and exit.
-- **--version**: Show version number and exit.
-- **--config** (default: `"glcheck.config.json"`): Path to config file.
-- **--output-dir** (default: `"glcheck-results/"`): Directory to output results into. This will be run by puppeteer, but can also simply be opened in a browser. 
-- **--server-port** (default: `7171`): Port to run the local server on for puppeteer testing.
-- **--headless** (default: `true`): Whether to run headless.
-- **--coverage** (default: `false`): Whether to produce coverage results that are consumable by [Istanbul](https://istanbul.js.org/).
-- **--asset-dir** (default: `null`): Directory to load assets from. Contents from this directory will be available to tests in the subdirectory `assets/`.
-
-
-### Writing Tests
-
-Tests are defined for `glcheck` using the `glCheck` function. The general structure is as follows:
+Unit tests are defined using the `glcheck` function. The general structure is as follows:
 
 ```js
 
-glCheck("My test", (t, canvas) => {
+glcheck("My test", (t, canvas) => {
 
     // Write some tests
 
@@ -97,22 +107,9 @@ Test functions can also be async:
 
 ```js
 
-glCheck("My test", async (t, canvas) => {
+glcheck("My test", async (t, canvas) => {
 
     const data = await getAsyncData();
-
-    // Write some tests
-
-    t.done();
-});
-```
-
-A single test can be selected to run on its own using `glCheck.only`:
-
-
-```js
-
-glCheck.only("Test I'm writing now", (t, canvas) => {
 
     // Write some tests
 
@@ -124,12 +121,12 @@ The tester object's `done` method indicates that the test has completed and can 
 - `t.done()`: Indicate that a test has completed.
 
 ```js
-glCheck("Basic", async (t, canvas) => {
+glcheck("Basic", async (t, canvas) => {
     t.ok(true, "ok");
     t.done();
 });
 
-glCheck("Async", async (t, canvas) => {
+glcheck("Async", async (t, canvas) => {
     setTimeout(() => {
         t.ok(true, "ok");
         t.done();
@@ -148,7 +145,7 @@ The tester object exposes the following basic assertions:
 - `t.doesNotThrow(fn, message)`: Check that `fn` does not throw an exception.
 
 ```js
-glCheck("Basic assertions", (t, canvas) => {
+glcheck("Basic assertions", (t, canvas) => {
     t.ok(true, "ok");
     t.equal(1, 1, "equal");
     t.deepEqual({a: 1, b: 2}, {a: 1, b: 2}, "deepEqual");
@@ -171,7 +168,7 @@ The tester object also exposes WebGL-specific assertions:
 - `t.bufferNotEqual(gl, binding, expected, message)` **(WebGL 2-only)**: Check if the buffer bound to `binding` does not contain the values in `expected`. Matching will be done based on the array type of `expected` and will default to `Float32Array`.
 
 ```js
-glCheck("GL assertions", (t, canvas) => {
+glcheck("GL assertions", (t, canvas) => {
     const gl = canvas.getContext("webgl2");
 
     t.parameterEqual(gl, gl.DEPTH_TEST, true, "parameterEqual");
@@ -201,7 +198,7 @@ Finally, the tester object exposes the async helper `loopUntil` for tests that r
 - `t.loopUntil(fn)`: Returns a promise that starts a `requestAnimationFrame` loop, calling `fn` on each frame and resolving when it returns true.
 
 ```js
-glCheck("loopUntil helper", async (t, canvas) => {
+glcheck("loopUntil helper", async (t, canvas) => {
     const gl = canvas.getContext("webgl2");
     const query = gl.createQuery();
 
@@ -216,3 +213,41 @@ glCheck("loopUntil helper", async (t, canvas) => {
     t.done();
 });
 ```
+
+# Render Tests
+
+Render tests are run by providing a list of HTML files to render in the configuration file:
+
+```json
+{
+    "renderTests": "test/render/*.html"
+}
+```
+
+To be usable as a render test, a page must simply indicate when it has completed rendering by setting the global `glcheck_renderDone` to `true`:
+
+```js
+window.glcheck_renderDone = true;
+```
+
+**NOTE:** It recommended to stop animations once `glcheck_renderDone` is set to ensure consistent results. 
+
+**glcheck** also exposes a helper function `glcheck_setRAFCount` to pages loaded as render tests to simplify controlling animations and signaling that a render is complete.
+- `glcheck_setRAFCount(numFrames)`: Instrument `requestAnimationFrame` to only loop `numFrames` times and set `glcheck_renderDone` afterwards.
+
+This can be helpful in instrumenting a page to stop rendering when used as a render test, but render normally otherwise.
+
+```js
+
+if (window.glcheck_setRAFCount) {
+    window.glcheck_setRAFCount(10);
+}
+
+requestAnimationFrame(function draw() {
+    requestAnimationFrame(draw);
+
+    // Will loop 10 times when run by glcheck,
+    // normally otherwise.
+});
+
+``` 

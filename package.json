@@ -8,11 +8,14 @@
     "url": "https://github.com/tsherif/glcheck"
   },
   "scripts": {
-    "lint": "eslint glcheck page/glcheck.js",
+    "lint": "eslint glcheck unit-test-page/glcheck.js",
     "test": "npm run lint && ./glcheck && npm run test-full-config && npm run test-cli-args && npm run test-cli-equal-args",
-    "test-full-config": "./glcheck --config test/test-configs/full-config.json && test -d full-config-results  && test -d .nyc_output && rimraf full-config-results",
-    "test-cli-args": "./glcheck --clear-config --output-dir cli-results --server-port 5151 --asset-dir test/assets/ --coverage true, --headless true test/test.js && test -d cli-results  && test -d .nyc_output && rimraf cli-results",
-    "test-cli-equal-args": "./glcheck --clear-config --output-dir=cli-equal-results --server-port=5151 --asset-dir=test/assets/ --coverage=true --headless=true test/test.js && test -d cli-equal-results  && test -d .nyc_output && rimraf cli-equal-results",
+    "with-full-config": "./glcheck --config test/test-configs/full-config.json",
+    "test-full-config": "npm run with-full-config && test -d full-config-test/unit-tests && test -d .nyc_output && npm run with-full-config && test -e full-config-test/reference-images/test-render-render-test.html.png && rimraf full-config-test",
+    "with-cli-args": "./glcheck --clear-config --unit-test-dir cli-args-test/unit-tests --reference-image-dir cli-args-test/reference-images --reference-image-dir cli-args-test/reference-images --render-failure-dir cli-args-test/render-failures --save-render-failures=true --render-test-threshold 0.75 --server-port 5151 --asset-dir test/assets/ --coverage true --headless true --render-timeout 10000",
+    "test-cli-args": "npm run with-cli-args && test -d cli-args-test/unit-tests  && test -d .nyc_output && npm run with-cli-args && test -e cli-args-test/reference-images/test-render-render-test.html.png && rimraf cli-args-test",
+    "with-cli-equal-args": "./glcheck --clear-config --unit-test-dir=cli-equal-args-test/unit-tests --reference-image-dir=cli-equal-args-test/reference-images --render-failure-dir=cli-equal-args-test/render-failures --save-render-failures=true --server-port=5151 --render-test-threshold=0.75 --asset-dir=test/assets/ --coverage=true --headless=true --render-timeout=10000",
+    "test-cli-equal-args": "npm run with-cli-equal-args && test -d cli-equal-args-test/unit-tests  && test -d .nyc_output && npm run with-cli-equal-args && test -e cli-equal-args-test/reference-images/test-render-render-test.html.png && rimraf cli-equal-args-test",
     "coverage": "rimraf coverage/ && ./glcheck --self-test --coverage=true && nyc report --reporter=lcov"
   },
   "keywords": [
@@ -30,6 +33,8 @@
   "dependencies": {
     "copy-dir": "^1.2.0",
     "node-glob": "^1.2.0",
+    "pixelmatch": "^5.1.0",
+    "pngjs": "^3.4.0",
     "puppeteer": "^2.0.0",
     "puppeteer-to-istanbul": "^1.2.2",
     "rimraf": "^3.0.0"
