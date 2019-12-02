@@ -329,7 +329,7 @@ const server = http.createServer((req, res) => {
         let index = template
         .replace("QUNIT_IMPORT", qunit)
         .replace("GLTEST_IMPORT", SELF_TEST ? "<script src=\"./glcheck.js\"></script>" : `<script>${glcheck}</script>`)
-        .replace("FRAMEWORK_IMPORTS", testPaths.join("\n"));
+        .replace("UNIT_TEST_IMPORTS", testPaths.join("\n"));
 
         const writes = [ fs.writeFile(path.resolve(UNIT_TEST_DIR, "index.html"), index) ];
 
