@@ -208,7 +208,7 @@ glcheck("loopUntil helper", async (t, canvas) => {
 
     await t.loopUntil(() => gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE));
 
-    t.equal(gl.getQueryParameter(this.query, GL.QUERY_RESULT), expected, "Query results");
+    t.equal(gl.getQueryParameter(query, GL.QUERY_RESULT), expected, "Query results");
 
     t.done();
 });
