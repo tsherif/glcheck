@@ -3,7 +3,7 @@ glcheck
 
 [![Build Status](https://travis-ci.com/tsherif/glcheck.svg?branch=master)](https://travis-ci.com/tsherif/glcheck) [![Coverage Status](https://img.shields.io/coveralls/github/tsherif/glcheck)](https://coveralls.io/github/tsherif/glcheck?branch=master) [![License](https://img.shields.io/github/license/tsherif/glcheck.svg)](https://github.com/tsherif/glcheck/blob/master/LICENSE) [![NPM](https://img.shields.io/npm/v/glcheck.svg)](https://www.npmjs.com/package/glcheck)
 
-**glcheck** is a WebGL-focused testing framework. It runs unit tests and render tests using puppeteer which allows it to run automated tests and generate coverage reports for both WebGL 1 and 2 applications.
+**glcheck** is a WebGL-focused testing framework. It runs unit and render tests using [puppeteer](https://pptr.dev/) which allows it to run automated tests and generate coverage reports for both WebGL 1 and 2 applications.
 
 # Usage
 
@@ -60,7 +60,7 @@ Command line arguments will always override options from the config file:
 
 # Unit Tests
 
-A slimple unit test suite using **glcheck** might look like the following:
+A simple unit test suite using **glcheck** might look like the following:
 
 ```js
 
@@ -233,7 +233,7 @@ window.glcheck_renderDone = true;
 **NOTE:** It recommended to stop animations once `glcheck_renderDone` is set to ensure consistent results. 
 
 **glcheck** also exposes a helper function `glcheck_setRAFCount` to pages loaded as render tests to simplify controlling animations and signaling that a render is complete.
-- `glcheck_setRAFCount(numFrames)`: Instrument `requestAnimationFrame` to only loop `numFrames` times and set `glcheck_renderDone` afterwards.
+- `glcheck_setRAFCount(n)`: Instrument `requestAnimationFrame` to only loop `n` times and set `glcheck_renderDone` afterwards.
 
 This can be helpful in instrumenting a page to stop rendering when used as a render test, but render normally otherwise.
 
